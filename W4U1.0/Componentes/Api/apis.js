@@ -45,5 +45,45 @@ export const registerUser = async (userData) => {
   }
 };
 
+/**
+ * Função para anunciar um novo serviço, incluindo uma foto.
+ * @param {string} categoria - A categoria do serviço.
+ * @param {string} descricao - A descrição do serviço.
+ * @param {string} photoUri - O URI local da foto em React Native.
+ * @returns {Promise<object>} - Os dados da resposta do servidor.
+ */
+export const anunciarServico = async (categoria, descricao, photoUri) => {
+  try {
+    const formData = new FormData();
+    formData.append('categoria', categoria);
+    formData.append('descricao', descricao);
+    
+    const fileExtension = photoUri.split('.').pop();
+    const mimeType = `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`;
+
+    formData.append('image', {
+      uri: photoUri,
+      name: `service-photo-${Date.now()}.${fileExtension}`,
+      type: mimeType, 
+    });
+
+    const response = await axios.post(`${API_BASE_URL}/anunciar`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data', 
+      },
+      timeout: 15000,
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Erro ao anunciar serviço:",
+      error.response ? error.response.data : error.message
+    );
+    throw error; 
+  }
+};
+
 // adicionar as outras funções aqui (esqueceu-senha, validar-pin, etc.)
 // seguindo o mesmo padrão.
+
