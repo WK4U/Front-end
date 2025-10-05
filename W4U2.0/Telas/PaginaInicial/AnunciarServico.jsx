@@ -6,20 +6,23 @@ import {
     TouchableOpacity, 
     TextInput, 
     Alert,
-    Modal,      
-    Button,     
-    Image 
+    Modal,        
+    Button,        
+    Image,
+    ActivityIndicator 
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker'; 
 import { Feather, Ionicons } from '@expo/vector-icons'; 
 import * as ImagePicker from 'expo-image-picker'; 
 import Foto from '../Foto/Foto.jsx'; 
+import { anunciarServico } from "../../Componentes/Api/apis.js";
 
 export default function AnunciarServico() {
     const [categoria, setCategoria] = useState('');
     const [descricao, setDescricao] = useState('');
     const [modalVisible, setModalVisible] = useState(false); 
     const [photoUri, setPhotoUri] = useState(null); 
+    const [loading, setLoading] = useState(false); 
 
     const servicos = [
         { label: 'Selecione um trabalho...', value: '' },
@@ -36,51 +39,79 @@ export default function AnunciarServico() {
         console.log("Foto de serviço capturada! URI:", fotoData.uri);
     };
 
-    const handleAnunciar = () => {
+    const handleGallery = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert(
+                'Permissão Negada',
+                'Precisamos de permissão para acessar a sua galeria de fotos.'
+            );
+            return;
+        }
+
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            setPhotoUri(result.assets[0].uri);
+            console.log("Foto de serviço da galeria selecionada! URI:", result.assets[0].uri);
+        } else {
+            console.log("Seleção de imagem cancelada ou falhou.");
+        }
+    };
+
+    const handleTakePhoto = () => {
+        setModalVisible(true);
+    };
+
+    const handleAnunciar = async () => { 
+        // 1. Validações
         if (!categoria.trim() || !descricao.trim()) {
             Alert.alert("Erro", "Por favor, preencha a categoria e a descrição.");
             return;
+        }
+        if (categoria === '') {
+             Alert.alert("Erro", "Por favor, selecione uma categoria válida.");
+             return;
         }
         if (!photoUri) {
             Alert.alert("Erro", "Por favor, adicione uma foto de exemplo do serviço.");
             return;
         }
-        Alert.alert("Sucesso", `Serviço anunciado!\nCategoria: ${categoria}\nDescrição: ${descricao}\nFoto URI: ${photoUri}`);
+       
+
+        setLoading(true); 
+
+        try {
+            const result = await anunciarServico(categoria, descricao, photoUri);
+            
+            Alert.alert("Sucesso", "Serviço anunciado com sucesso!");
+            
+            setCategoria('');
+            setDescricao('');
+            setPhotoUri(null);
+
+        } catch (error) {
+            let errorMessage = "Não foi possível completar a requisição. Tente novamente.";
+
+            if (error.response && error.response.data && error.response.data.message) {
+                errorMessage = error.response.data.message; 
+            } else if (error.message.includes('Network Error')) {
+                errorMessage = "Erro de conexão. Verifique se o servidor está ativo (192.168.1.2:8081).";
+            }
+                
+            Alert.alert("Falha no Anúncio", errorMessage);
+        } finally {
+            setLoading(false); 
+        }
     };
     
-    const handleGallery = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        
-        if (status !== 'granted') {
-            Alert.alert(
-                "Permissão Negada", 
-                "Precisamos de permissão para acessar sua galeria de fotos para que você possa selecionar uma imagem."
-            );
-            return;
-        }
-        
-        // 2. Abrir o seletor de imagens
-        let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images, 
-            allowsEditing: true, 
-            aspect: [4, 3], 
-            quality: 1, 
-        });
-
-        if (!result.canceled && result.assets && result.assets.length > 0) {
-            setPhotoUri(result.assets[0].uri);
-        } else if (result.canceled) {
-            console.log("Seleção de imagem cancelada.");
-        }
-    };
-    
-    const handleTakePhoto = () => {
-        setModalVisible(true);
-    };
-
     return (
         <View style={styles.container}>
-            
             
             <Text style={styles.title}>Anunciar serviço</Text>
 
@@ -131,22 +162,29 @@ export default function AnunciarServico() {
                 <TouchableOpacity 
                     style={styles.photoActionButton}
                     onPress={handleGallery} 
+                    disabled={loading} 
                 >
                     <Text style={styles.actionButtonText}>Enviar da galeria</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                     style={styles.photoActionButton}
                     onPress={handleTakePhoto}
+                    disabled={loading} 
                 >
                     <Text style={styles.actionButtonText}>Tirar foto</Text>
                 </TouchableOpacity>
             </View>
 
             <TouchableOpacity 
-                style={styles.announceButton}
+                style={[styles.announceButton, loading && styles.announceButtonDisabled]}
                 onPress={handleAnunciar}
+                disabled={loading} 
             >
-                <Text style={styles.announceButtonText}>Anunciar</Text>
+                {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                    <Text style={styles.announceButtonText}>Anunciar</Text>
+                )}
             </TouchableOpacity>
             
             <Modal
@@ -275,5 +313,8 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    announceButtonDisabled: {
+        backgroundColor: '#a8b9dd', 
     },
 });
