@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 const Estilos = StyleSheet.create({
 
     container : {
-        felx: 1,
+        flex: 1,
         backgroundColor: '#fff',
         alignItems: 'center',
         justifyContent: 'center'
@@ -59,5 +59,6 @@ const Estilos = StyleSheet.create({
 
 
 })
+
 
 export default Estilos;
