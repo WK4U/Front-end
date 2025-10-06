@@ -66,7 +66,7 @@ export const anunciarServico = async (categoria, descricao, photoUri) => {
       name: `service-photo-${Date.now()}.${fileExtension}`,
       type: mimeType, 
     });
-    const response = await axios.post(`${API_BASE_URL}/anunciar`, formData, {
+    const response = await axios.post(`${API_BASE_URL}/postagem/register`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data', 
       },
@@ -84,3 +84,4 @@ export const anunciarServico = async (categoria, descricao, photoUri) => {
 
 // adicionar as outras funções aqui (esqueceu-senha, validar-pin, etc.)
 // seguindo o mesmo padrão.
+
