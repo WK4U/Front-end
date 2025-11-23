@@ -1,0 +1,227 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import HeaderPadrao from '../../Componentes/Header/HeaderPadrao';
+import { listarMeusServicos, getCurrentUser, fetchMyProfile } from '../../Componentes/Api/apis.js';
+
+export default function MeusServicos({ navigation }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Garante que somente prestador veja lista; caso não seja, redireciona
+      let user = await getCurrentUser();
+      if (!user) {
+        try { user = await fetchMyProfile(); } catch {}
+      }
+      const isPrestador = !!(user?.cnpj || /JURIDICO|PRESTADOR|PJ/i.test(String(user?.tipoUsuario || user?.perfil || user?.tipo || '')));
+      if (!isPrestador) {
+        setItems([]);
+        navigation.replace('PaginaInicial');
+        return;
+      }
+      const data = await listarMeusServicos();
+      setItems(Array.isArray(data) ? data : (data?.itens || []));
+    } catch (e) {
+      setError('Não foi possível carregar seus serviços.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  useEffect(() => {
+    const unsub = navigation.addListener('focus', load);
+    return unsub;
+  }, [navigation]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await load();
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  const renderItem = ({ item }) => (
+    <View style={styles.card}>
+      <View style={styles.cardContent}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardTitle}>{item?.nomeServico || item?.titulo || item?.categoria || 'Serviço'}</Text>
+          <Text style={styles.cardCategoria}>Categoria: {item?.categoria || 'Categoria'}</Text>
+          <Text style={styles.cardDesc} numberOfLines={2}>
+            {item?.descricao || item?.descricaoServico || 'Sem descrição'}
+          </Text>
+          <View style={styles.cardInfoRow}>
+            {/* Estrelas de avaliação */}
+            <View style={styles.starsRow}>
+              {[...Array(5)].map((_, idx) => (
+                <Ionicons
+                  key={idx}
+                  name={idx < (item?.avaliacao || 0) ? 'star' : 'star-outline'}
+                  size={18}
+                  color="#FFD700"
+                  style={{ marginRight: 2 }}
+                />
+              ))}
+            </View>
+            {/* Status e preço */}
+            {item?.preco || item?.valor ? (
+              <Text style={styles.cardPreco}>R$ {item?.preco || item?.valor}</Text>
+            ) : null}
+            <Text style={styles.cardStatus}>
+              {item?.ativo === false || item?.status === 'inativo' ? 'Inativo' : 'Ativo'}
+            </Text>
+          </View>
+        </View>
+        {/* Ícone/imagem à direita */}
+        {item?.imageUrl ? (
+          <Image source={{ uri: item.imageUrl }} style={styles.thumb} />
+        ) : (
+          <View style={[styles.thumb, styles.thumbPlaceholder]}>
+            <Ionicons name="images-outline" size={32} color="#7D95C9" />
+          </View>
+        )}
+      </View>
+      <View style={styles.cardActions}>
+        <TouchableOpacity
+          style={styles.cardActionButton}
+          onPress={() => navigation.navigate('AnunciarServico', { editing: true, servico: item })}
+        >
+          <Ionicons name="create-outline" size={18} color="#fff" />
+          <Text style={styles.cardActionText}>Editar</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.page}>
+      <HeaderPadrao navigation={navigation} onHome={() => navigation.navigate('MeusServicos')} />
+
+      <FlatList
+        data={items}
+        keyExtractor={(it, idx) => String(it?.id || idx)}
+        contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+        ListEmptyComponent={!loading ? (
+          <View style={styles.emptyBox}>
+            <Ionicons name="briefcase-outline" size={28} color="#9AA6BD" />
+            <Text style={styles.emptyText}>Você ainda não anunciou serviços.</Text>
+          </View>
+        ) : null}
+        renderItem={renderItem}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListFooterComponent={loading ? (
+          <View style={{ paddingVertical: 12 }}>
+            <Text style={{ textAlign: 'center', color: '#7b8aa5' }}>Carregando...</Text>
+          </View>
+        ) : null}
+      />
+
+      {error ? (
+        <View style={styles.errorBar}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
+
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => navigation.navigate('AnunciarServico', { editing: false })}
+        >
+          <Ionicons name="add-circle" size={20} color="#fff" style={{ marginRight: 8 }} />
+          <Text style={styles.primaryButtonText}>Anunciar serviço</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  page: { flex: 1, backgroundColor: '#fff' },
+  header: {
+    height: 56,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#d8dfef',
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerBtn: { padding: 6 },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50' },
+  card: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f4',
+    borderRadius: 10,
+    marginBottom: 12,
+    backgroundColor: '#fff',
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#222', marginBottom: 2 },
+  cardCategoria: { fontSize: 15, color: '#444', marginBottom: 2 },
+  cardDesc: { fontSize: 14, color: '#555', marginBottom: 4 },
+  cardInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  starsRow: { flexDirection: 'row', alignItems: 'center', marginRight: 8 },
+  cardStatus: { fontSize: 14, color: '#222', marginLeft: 8 },
+  cardPreco: { fontSize: 15, color: '#222', fontWeight: 'bold', marginLeft: 8 },
+  thumb: { width: 56, height: 56, borderRadius: 8, marginLeft: 12 },
+  thumbPlaceholder: { borderWidth: 1, borderColor: '#c9d3e6', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f7fb' },
+  cardActions: {
+    marginTop: 12,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  cardActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#7D95C9',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  cardActionText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  emptyBox: { alignItems: 'center', marginTop: 48 },
+  emptyText: { marginTop: 8, color: '#7b8aa5' },
+  errorBar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 10, backgroundColor: '#ffe5e5' },
+  errorText: { textAlign: 'center', color: '#a33' },
+  bottomBar: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f4',
+    backgroundColor: '#fff',
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#7D95C9',
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});

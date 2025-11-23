@@ -1,0 +1,138 @@
+import { StyleSheet } from "react-native";
+
+// Paleta centralizada
+export const Cores = {
+  primario: "#6D6FB3",
+  primarioEscuro: "#4E5188",
+  neutroClaro: "#f4f7ff",
+  neutro: "#444C55",
+  borda: "#6D6FB3",
+  texto: "#2c3e50",
+};
+
+const Estilos = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  texto: {
+    fontSize: 20,
+    fontFamily: "Arial",
+  },
+  image: {
+    width: 300,
+    height: 200,
+    resizeMode: "contain",
+    margin: 10,
+  },
+  primaryButton: {
+    backgroundColor: Cores.primario,
+    width: "90%",
+    marginTop: 24,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  // Filled dark button used for secondary emphasis (e.g., Login on prestador landing)
+  secondaryButton: {
+    backgroundColor: Cores.neutro,
+    width: "90%",
+    marginTop: 16,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  planButton: {
+    backgroundColor: Cores.texto,
+    width: "85%",
+    marginTop: 16,
+    height: 48,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  outlineButton: {
+    backgroundColor: "#fff",
+    width: "90%",
+    marginTop: 12,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Cores.borda,
+  },
+  buttonTextPrimary: {
+    fontFamily: "Arial",
+    fontSize: 18,
+    color: "#fff",
+    fontWeight: "600",
+  },
+  buttonTextSecondary: {
+    fontFamily: "Arial",
+    fontSize: 18,
+    color: "#fff",
+    fontWeight: "600",
+  },
+  buttonTextPlan: {
+    fontFamily: "Arial",
+    fontSize: 16,
+    color: "#fff",
+    fontWeight: "500",
+    letterSpacing: 0.5,
+  },
+  buttonTextOutline: {
+    fontFamily: "Arial",
+    fontSize: 18,
+    color: "#444C55",
+    fontWeight: "600",
+  },
+  currentPlanBox: {
+    width: "85%",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Cores.borda,
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  currentPlanText: {
+    fontSize: 14,
+    color: "#444C55",
+    fontWeight: "600",
+  },
+  input: {
+    width: "90%",
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: Cores.borda,
+    paddingHorizontal: 18,
+    backgroundColor: "#fff",
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+  },
+});
+
+export default Estilos;

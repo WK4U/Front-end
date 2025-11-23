@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "W4U",
+    "slug": "W4U",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/W4ULoadPrincipal.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/W4ULoadPrincipal.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+  "extra": {
+    "apiUrl": "http://192.168.1.3:8081",
+        "cloudinary": {
+          "cloudName": "YOUR_CLOUD_NAME",
+          "uploadPreset": "YOUR_UNSIGNED_PRESET"
+        }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
+          "recordAudioAndroid": true
+        }
+      ]
+    ]
+  }
+}
