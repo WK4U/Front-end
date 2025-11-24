@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Image, Modal } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Image, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { editProfile, getCurrentUser, fetchMyProfile } from '../../Componentes/Api/apis.js';
 import * as ImagePicker from 'expo-image-picker';
@@ -197,7 +197,10 @@ export default function ContaPrestador({ navigation, route }) {
         <TextInput style={styles.input} value={confirmar} onChangeText={setConfirmar} secureTextEntry />
 
         <TouchableOpacity style={[styles.btn, loading && { opacity: 0.7 }]} disabled={loading} onPress={salvar}>
-          <Text style={styles.btnText}>Confirmar alterações</Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" size="small" style={{ marginRight: 8 }} />
+          ) : null}
+          <Text style={styles.btnText}>{loading ? 'Carregando...' : 'Confirmar alterações'}</Text>
         </TouchableOpacity>
       </ScrollView>
 

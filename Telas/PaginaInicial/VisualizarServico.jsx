@@ -12,13 +12,49 @@ export default function VisualizarServico({ navigation, route }) {
   const [servico, setServico] = useState(paramServico);
   const [loading, setLoading] = useState(false);
   const [erroCarregar, setErroCarregar] = useState(null);
-  // Busca nome do prestador real, nunca apenas 'Prestador'
-  let nomeBase = servico?.providerName;
-  if (!nomeBase || nomeBase === 'Prestador') {
-    // Tenta buscar nome do prestador em raw
-    const raw = servico?.raw || servico?.rawDetalhe || {};
-    const prestadorRaw = raw.prestador || raw.provider || raw.owner || raw.usuario || raw.user || {};
-    nomeBase = prestadorRaw?.nome || prestadorRaw?.pessoaJuridica?.nome || prestadorRaw?.usuario?.nome || servico?.nomeServico || servico?.nome || servico?.titulo || 'Profissional';
+  // Busca nome do prestador real, nunca apenas 'Prestador' ou categoria
+  // Lógica reforçada para garantir o nome do prestador
+  let nomeBase = null;
+  const tentativasNome = [
+    servico?.providerName,
+    servico?.nomePrestador,
+    servico?.nome,
+    servico?.usuario?.nome,
+    servico?.prestador?.nome,
+    servico?.owner?.nome,
+    servico?.provider?.nome,
+    servico?.user?.nome,
+    servico?.pessoaJuridica?.nome,
+    servico?.pessoa?.nome,
+    servico?.raw?.nome,
+    servico?.rawDetalhe?.nome,
+    servico?.raw?.prestador?.nome,
+    servico?.raw?.provider?.nome,
+    servico?.raw?.owner?.nome,
+    servico?.raw?.usuario?.nome,
+    servico?.raw?.user?.nome,
+    servico?.raw?.pessoaJuridica?.nome,
+    servico?.raw?.pessoa?.nome,
+    servico?.rawDetalhe?.prestador?.nome,
+    servico?.rawDetalhe?.provider?.nome,
+    servico?.rawDetalhe?.owner?.nome,
+    servico?.rawDetalhe?.usuario?.nome,
+    servico?.rawDetalhe?.user?.nome,
+    servico?.rawDetalhe?.pessoaJuridica?.nome,
+    servico?.rawDetalhe?.pessoa?.nome,
+    typeof servico?.raw?.prestador === 'string' ? servico?.raw?.prestador : null,
+    typeof servico?.raw?.provider === 'string' ? servico?.raw?.provider : null,
+    typeof servico?.rawDetalhe?.prestador === 'string' ? servico?.rawDetalhe?.prestador : null,
+    typeof servico?.rawDetalhe?.provider === 'string' ? servico?.rawDetalhe?.provider : null,
+  ];
+  for (const tentativa of tentativasNome) {
+    if (tentativa && typeof tentativa === 'string' && tentativa.trim().length > 0 && tentativa !== 'Prestador' && tentativa !== servico?.tipoServico && tentativa !== servico?.categoria && tentativa !== 'Serviço') {
+      nomeBase = tentativa.trim();
+      break;
+    }
+  }
+  if (!nomeBase) {
+    nomeBase = 'Prestador não identificado';
   }
   const categoriaBase = servico?.providerCargo || servico?.tipoServico || servico?.categoria || 'Categoria do serviço';
   const descricaoBase = servico?.descricao || servico?.descricaoPostagem || servico?.descricaoServico || null;
@@ -284,15 +320,11 @@ export default function VisualizarServico({ navigation, route }) {
         }}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Categoria */}
-        <Text style={styles.sectionLabel}>Cargo / Especialidade:</Text>
-        <Text style={styles.categoryText}>{categoriaBase}</Text>
+        {/* Título do serviço: categoria/tipo cadastrado */}
+        <Text style={styles.serviceTitle}>{categoriaBase}</Text>
 
-        {/* Título do serviço */}
-        <Text style={styles.serviceTitle}>Prestador: {nomeBase}</Text>
-
-        {/* Descrição */}
-        <Text style={styles.fieldLabel}>Descrição do serviço:</Text>
+        {/* Descrição do serviço/postagem */}
+        <Text style={styles.fieldLabel}>Descrição:</Text>
         <View style={styles.descriptionBox}>
           {loading ? (
             <ActivityIndicator size="small" color="#6D6FB3" />

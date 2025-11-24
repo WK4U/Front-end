@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Share, Alert } from 'react-native';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderPadrao from '../../Componentes/Header/HeaderPadrao';
 import { listarMeusServicos, getCurrentUser, fetchMyProfile } from '../../Componentes/Api/apis.js';
@@ -57,10 +57,11 @@ export default function MeusServicos({ navigation }) {
     <View style={styles.card}>
       <View style={styles.cardContent}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>{item?.nomeServico || item?.titulo || item?.categoria || 'Serviço'}</Text>
-          <Text style={styles.cardCategoria}>Categoria: {item?.categoria || 'Categoria'}</Text>
+          {/* Título: categoria do serviço (tipoServico) */}
+          <Text style={styles.cardTitle}>{item?.tipoServico || ''}</Text>
+          {/* Descrição da postagem */}
           <Text style={styles.cardDesc} numberOfLines={2}>
-            {item?.descricao || item?.descricaoServico || 'Sem descrição'}
+            {item?.descricaoPostagem || item?.descricao || 'Sem descrição'}
           </Text>
           <View style={styles.cardInfoRow}>
             {/* Estrelas de avaliação */}
@@ -156,11 +157,14 @@ export default function MeusServicos({ navigation }) {
 
       <View style={styles.bottomBar}>
         <TouchableOpacity
-          style={styles.primaryButton}
+          style={[styles.primaryButton, loading && { opacity: 0.7 }]}
+          disabled={loading}
           onPress={() => navigation.navigate('AnunciarServico', { editing: false })}
         >
-          <Ionicons name="add-circle" size={20} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={styles.primaryButtonText}>Anunciar serviço</Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" size="small" style={{ marginRight: 8 }} />
+          ) : <Ionicons name="add-circle" size={20} color="#fff" style={{ marginRight: 8 }} />}
+          <Text style={styles.primaryButtonText}>{loading ? 'Carregando...' : 'Anunciar serviço'}</Text>
         </TouchableOpacity>
       </View>
     </View>
