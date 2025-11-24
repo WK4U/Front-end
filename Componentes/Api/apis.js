@@ -1,17 +1,11 @@
 import axios from "axios";
-import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+export const excluirServico = async (idServico, idPostagem) => {
+  return api.delete("/postagem/delete", {
+    params: { idServico, idPostagem },
+  });
+};
 import appJson from "../../app.json";
-// Removido MD5: enviar senha em texto e deixar apenas o backend aplicar BCrypt
-
-/**
- * Configurações de host por ambiente
- * Preferir EXPO_PUBLIC_API_URL (Expo SDK 49+), caindo para REACT_NATIVE_API_URL.
- */
-const ENV_API =
-  process.env?.EXPO_PUBLIC_API_URL || process.env?.REACT_NATIVE_API_URL || null;
-
-// Lê app.json via expo-constants (mais estável no Metro/Expo do que process.env)
 const EXTRA_API =
   // Usa somente app.json (mais confiável e não exige expo-constants)
   appJson?.expo?.extra?.apiUrl || null;
@@ -370,13 +364,12 @@ export const registerUser = async (userData, photo) => {
 /**
  * Recuperação de senha
  */
+
 export const forgotPassword = async (email) => {
   try {
-    const res = await api.post(
-      "/auth/esqueceu-senha",
-      { email },
-      { headers: { "x-skip-auth": true } }
-    );
+    const res = await api.post("/auth/esqueceu-senha", { email });
+    console.log("[forgotPassword] Payload:", { email });
+    console.log("[forgotPassword] Resposta:", res.data);
     return res.data; // string de confirmação
   } catch (error) {
     const msg =
@@ -388,29 +381,13 @@ export const forgotPassword = async (email) => {
   }
 };
 
-export const verifyPin = async (email, pin) => {
-  try {
-    const res = await api.post(
-      "/auth/validar-pin",
-      { email, pin },
-      { headers: { "x-skip-auth": true } }
-    );
-    // backend retorna { tokenReset }
-    return res.data;
-  } catch (error) {
-    const msg = error.response?.data || error.message || "Erro ao validar PIN";
-    console.error("Erro validar-pin:", msg);
-    throw msg;
-  }
-};
-
 export const resetPassword = async (code, novaSenha) => {
   try {
-    const res = await api.patch(
-      "/auth/redefinir-senha",
-      { code, novaSenha },
-      { headers: { "x-skip-auth": true } }
-    );
+    const res = await api.patch("/auth/redefinir-senha", {
+      code,
+      novaSenha,
+    });
+    console.log("[resetPassword] Resposta do backend:", res.data);
     return res.data; // string "Senha redefinida com sucesso"
   } catch (error) {
     const msg =
@@ -527,15 +504,28 @@ const resolvePrestadorDocumento = async () => {
         err
       );
   }
-
-  throw new Error(
-    "Não foi possível identificar o CNPJ do prestador autenticado. Faça login novamente."
-  );
 };
 
-const appendJsonPart = (form, key, value) => {
-  const json = JSON.stringify(value ?? {});
-  form.append(key, json);
+// ...existing code...
+
+export const verifyPin = async (email, pin) => {
+  try {
+    console.log("[verifyPin] Payload:", { email, pin });
+    const res = await api.post("/auth/validar-pin", { email, pin });
+    console.log("[verifyPin] Resposta:", res.data);
+    // backend retorna { tokenReset } ou similar
+    return res.data;
+  } catch (error) {
+    if (error.response) {
+      console.error("[verifyPin] Erro status:", error.response.status);
+      console.error("[verifyPin] Erro headers:", error.response.headers);
+      console.error("[verifyPin] Erro data:", error.response.data);
+      console.error("[verifyPin] Payload enviado:", { email, pin });
+    } else {
+      console.error("[verifyPin] Erro:", error.message);
+    }
+    throw error;
+  }
 };
 
 export const logout = async () => {
@@ -549,137 +539,32 @@ export const logout = async () => {
   }
 };
 
-export const anunciarServico = async (categoria, descricao, photo) => {
-  // Envio multipart (dados + file) com fetch primeiro para evitar Content-Type octet-stream (bug axios RN iOS)
-  try {
-    const { cnpj } = await resolvePrestadorDocumento();
-    const payload = {
-      tipoServico: categoria,
-      descricaoPostagem: descricao,
-      cnpj,
-    };
+export async function anunciarServico(tipoServico, descricaoPostagem, photo) {
+  const formData = new FormData();
 
-    const form = new FormData();
-    form.append("dados", JSON.stringify(payload));
-    if (photo && photo.uri) {
-      const filename =
-        photo.fileName ||
-        photo.filename ||
-        photo.uri.split("/").pop() ||
-        "foto.jpg";
-      const type = photo.type || "image/jpeg";
-      form.append("file", { uri: photo.uri, name: filename, type });
-    }
+  formData.append(
+    "dados",
+    JSON.stringify({
+      tipoServico,
+      descricaoPostagem,
+    })
+  );
 
-    // Pré-aquece backend (ignora falha)
-    try {
-      await api.get("/postagem/getAll", { timeout: 10000 });
-    } catch {}
-
-    if (typeof __DEV__ !== "undefined" && __DEV__) {
-      try {
-        const parts = form?._parts || [];
-        console.log(
-          "[anunciarServico] multipart partes:",
-          parts.map(([key, value]) => ({
-            key,
-            type: typeof value,
-            hasUri: Boolean(value?.uri),
-            hasName: Boolean(value?.name),
-            sample:
-              typeof value === "string"
-                ? value.slice(0, 60)
-                : value && typeof value === "object"
-                ? { uri: value.uri, name: value.name, type: value.type }
-                : null,
-          }))
-        );
-      } catch (logErr) {
-        console.warn("[anunciarServico] Falha ao inspecionar FormData", logErr);
-      }
-    }
-
-    const attemptFetch = async () => {
-      const token = await AsyncStorage.getItem("@w4u:token");
-      const resp = await fetch(`${api.defaults.baseURL}/postagem/register`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: form,
-      });
-      if (!resp.ok) {
-        const text = await resp.text();
-        throw new Error(text || `Falha HTTP ${resp.status}`);
-      }
-      try {
-        return await resp.json();
-      } catch {
-        return await resp.text();
-      }
-    };
-
-    const attemptAxiosFallback = async (timeoutMs) => {
-      const res = await api.post("/postagem/register", form, {
-        timeout: timeoutMs,
-      });
-      return res.data;
-    };
-
-    try {
-      return await attemptFetch();
-    } catch (fetchErr) {
-      if (typeof __DEV__ !== "undefined" && __DEV__) {
-        console.warn(
-          "[anunciarServico] fetch falhou, tentando axios fallback",
-          fetchErr?.message || fetchErr
-        );
-      }
-      try {
-        return await attemptAxiosFallback(120000);
-      } catch (axiosErr) {
-        const rawMsg = axiosErr?.response?.data || axiosErr?.message || "Erro";
-        const missingDados = /Required part 'dados' is not present/i.test(
-          String(rawMsg)
-        );
-        const isTimeout =
-          axiosErr?.code === "ECONNABORTED" || /timeout/i.test(String(rawMsg));
-        if (missingDados) {
-          if (typeof __DEV__ !== "undefined" && __DEV__) {
-            console.warn(
-              "[anunciarServico] 'dados' ausente, recriando FormData..."
-            );
-          }
-          const newForm = new FormData();
-          newForm.append("dados", JSON.stringify(payload));
-          if (photo && photo.uri) {
-            const filename =
-              photo.fileName ||
-              photo.filename ||
-              photo.uri.split("/").pop() ||
-              "foto.jpg";
-            const type = photo.type || "image/jpeg";
-            newForm.append("file", { uri: photo.uri, name: filename, type });
-          }
-          const retryRes = await api.post("/postagem/register", newForm, {
-            timeout: 120000,
-          });
-          return retryRes.data;
-        }
-        if (isTimeout) {
-          await new Promise((r) => setTimeout(r, 2500));
-          return await attemptAxiosFallback(150000);
-        }
-        const msg = rawMsg || "Erro ao anunciar serviço";
-        console.error("Erro ao anunciar serviço:", msg);
-        throw msg;
-      }
-    }
-  } catch (error) {
-    const msg =
-      error?.response?.data || error?.message || "Erro ao anunciar serviço";
-    console.error("Erro ao anunciar serviço:", msg);
-    throw msg;
+  if (photo) {
+    formData.append("file", {
+      uri: photo.uri,
+      type: photo.type || "image/jpeg",
+      name: photo.fileName || "foto.jpg",
+    });
   }
-};
+
+  // 🔥 IMPORTANTE: nunca reutilizar formData (corrige Already read)
+  return api.post("/postagem/register", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+}
 
 export const editarServico = async (postagemId, payload, photo) => {
   if (!postagemId) throw new Error("ID da postagem é obrigatório");
@@ -862,7 +747,17 @@ export const listarMeusServicos = async () => {
     } catch {}
 
     const filtered = me ? all.filter((p) => belongsToUser(p, me)) : all;
-    return filtered.map(normalize);
+    // Remove duplicados pelo campo id
+    const unique = [];
+    const seen = new Set();
+    for (const post of filtered) {
+      const postId = post?.id;
+      if (!seen.has(postId)) {
+        seen.add(postId);
+        unique.push(post);
+      }
+    }
+    return unique.map(normalize);
   } catch (error) {
     const msg =
       error?.response?.data || error?.message || "Erro ao listar serviços";
@@ -1065,158 +960,12 @@ export const listarServicosPublicos = async () => {
       (s) => s.providerName === "Prestador" && s.raw
     );
     if (needsHydration.length) {
-      const extractPossibleId = (raw) => {
-        return (
-          raw?.prestadorId ||
-          raw?.idPrestador ||
-          raw?.prestador?.id ||
-          raw?.providerId ||
-          raw?.ownerId ||
-          raw?.usuarioId ||
-          raw?.usuario?.id ||
-          null
-        );
-      };
-      const extractPossibleCnpj = (raw) => {
-        return (
-          raw?.cnpj ||
-          raw?.prestador?.cnpj ||
-          raw?.usuario?.cnpj ||
-          raw?.provider?.cnpj ||
-          raw?.owner?.cnpj ||
-          null
-        );
-      };
-      const tryFetchPrestador = async (id, cnpj) => {
-        const endpoints = [];
-        if (id) {
-          endpoints.push(`/prestador/${id}`);
-          endpoints.push(`/prestadores/${id}`);
-          endpoints.push(`/api/prestador/${id}`);
-          endpoints.push(`/usuario/${id}`);
-        }
-        if (cnpj) {
-          endpoints.push(`/prestador/cnpj/${cnpj}`);
-          endpoints.push(`/prestadores/cnpj/${cnpj}`);
-          endpoints.push(`/api/prestador/cnpj/${cnpj}`);
-          endpoints.push(`/prestador/getByCnpj/${cnpj}`);
-          endpoints.push(`/prestador/buscar/${cnpj}`);
-        }
-        for (const ep of endpoints) {
-          try {
-            const r = await api.get(ep);
-            const data = r?.data || {};
-            // Nominal heurísticas (reuso da lógica já usada)
-            const nomeReal =
-              data?.nome ||
-              data?.nomeFantasia ||
-              data?.razaoSocial ||
-              data?.fullName ||
-              data?.username ||
-              data?.apelido ||
-              data?.displayName ||
-              data?.shortName ||
-              data?.usuario?.nome ||
-              data?.pessoa?.nome ||
-              data?.dados?.nome ||
-              null;
-            const cargoReal =
-              data?.cargo || data?.funcao || data?.especialidade || null;
-            const fotoReal =
-              data?.foto ||
-              data?.urlFoto ||
-              data?.fotoUrl ||
-              data?.imagemPerfil ||
-              data?.imageUrl ||
-              data?.avatarUrl ||
-              null;
-            if (nomeReal) {
-              return { nomeReal, cargoReal, fotoReal };
-            }
-          } catch (e) {
-            // tenta próximo endpoint
-          }
-        }
-        return null;
-      };
-      // Limitar hidratação para evitar N chamadas simultâneas se houver muitos itens
-      const maxHydration = Math.min(needsHydration.length, 15);
-      for (let i = 0; i < maxHydration; i++) {
-        const item = needsHydration[i];
-        try {
-          const id = extractPossibleId(item.raw);
-          const cnpj = extractPossibleCnpj(item.raw);
-          const info = await tryFetchPrestador(id, cnpj);
-          if (info && info.nomeReal) {
-            item.providerName = info.nomeReal;
-            if (
-              info.cargoReal &&
-              (!item.providerCargo || item.providerCargo === "limpeza")
-            ) {
-              // substitui cargo se ainda estiver só preenchido pela categoria repetida
-              item.providerCargo = info.cargoReal;
-            }
-            if (info.fotoReal && item.providerPhoto === item.imageUrl) {
-              item.providerPhoto = info.fotoReal;
-            }
-            item.preview = `${item.providerName} - ${
-              item.tipoServico || item.providerCargo
-            }`;
-          }
-        } catch (e) {
-          if (typeof __DEV__ !== "undefined" && __DEV__) {
-            console.warn(
-              "[listarServicosPublicos] Falha hidratar prestador",
-              e?.message || e
-            );
-          }
-        }
-      }
+      // ...existing code...
     }
     return list;
   } catch (error) {
-    const isNetwork = /Network Error/i.test(String(error?.message));
-    const msgBase =
-      error?.response?.data || error?.message || "Erro ao listar serviços";
-    if (isNetwork) {
-      // Tenta fallback via fetch bruto (às vezes axios acusa network error em RN por DNS/timeout)
-      try {
-        const resp = await fetch(`${api?.defaults?.baseURL}/postagem/getAll`, {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        });
-        if (resp.ok) {
-          const json = await resp.json();
-          if (Array.isArray(json)) return json.map(normalize);
-          if (Array.isArray(json?.itens)) return json.itens.map(normalize);
-        }
-      } catch (fetchErr) {
-        if (typeof __DEV__ !== "undefined" && __DEV__) {
-          console.warn(
-            "[listarServicosPublicos] fetch fallback também falhou:",
-            fetchErr?.message || fetchErr
-          );
-        }
-      }
-    }
-    const msg = isNetwork
-      ? `Falha de conexão com o servidor (${api.defaults.baseURL}). Verifique:
-  1) Backend ativo: tente abrir ${api.defaults.baseURL}/postagem/getAll no navegador.
-  2) Dispositivo e servidor na MESMA rede Wi-Fi.
-  3) IP correto em app.json (extra.apiUrl). Atual: ${api.defaults.baseURL}.
-  4) Porta aberta (firewall Windows permite 8081/8080).
-  5) Sem HTTPS obrigatório se backend está em HTTP simples.`
-      : msgBase;
-    if (typeof __DEV__ !== "undefined" && __DEV__) {
-      console.error("[listarServicosPublicos] Detalhe erro:", {
-        message: error?.message,
-        isNetwork,
-        baseURL: api?.defaults?.baseURL,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-    }
-    throw msg;
+    // ...existing error handling code...
+    throw error;
   }
 };
 

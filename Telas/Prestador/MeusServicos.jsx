@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { Share, Alert } from 'react-native';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderPadrao from '../../Componentes/Header/HeaderPadrao';
@@ -99,6 +100,24 @@ export default function MeusServicos({ navigation }) {
         >
           <Ionicons name="create-outline" size={18} color="#fff" />
           <Text style={styles.cardActionText}>Editar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.cardActionButton, { backgroundColor: '#4CAF50', marginLeft: 8 }]}
+          onPress={async () => {
+            const url = `https://w4u.com/servico/${item.id}`;
+            try {
+              await Share.share({
+                message: `Confira meu serviço no W4U: ${url}`,
+                url,
+                title: 'Meu serviço no W4U',
+              });
+            } catch (error) {
+              Alert.alert('Erro ao compartilhar', error.message);
+            }
+          }}
+        >
+          <Ionicons name="share-social-outline" size={18} color="#fff" />
+          <Text style={styles.cardActionText}>Compartilhar</Text>
         </TouchableOpacity>
       </View>
     </View>

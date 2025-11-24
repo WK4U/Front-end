@@ -12,7 +12,14 @@ export default function VisualizarServico({ navigation, route }) {
   const [servico, setServico] = useState(paramServico);
   const [loading, setLoading] = useState(false);
   const [erroCarregar, setErroCarregar] = useState(null);
-  const nomeBase = servico?.providerName || servico?.nomeServico || servico?.nome || servico?.titulo || 'Profissional';
+  // Busca nome do prestador real, nunca apenas 'Prestador'
+  let nomeBase = servico?.providerName;
+  if (!nomeBase || nomeBase === 'Prestador') {
+    // Tenta buscar nome do prestador em raw
+    const raw = servico?.raw || servico?.rawDetalhe || {};
+    const prestadorRaw = raw.prestador || raw.provider || raw.owner || raw.usuario || raw.user || {};
+    nomeBase = prestadorRaw?.nome || prestadorRaw?.pessoaJuridica?.nome || prestadorRaw?.usuario?.nome || servico?.nomeServico || servico?.nome || servico?.titulo || 'Profissional';
+  }
   const categoriaBase = servico?.providerCargo || servico?.tipoServico || servico?.categoria || 'Categoria do serviço';
   const descricaoBase = servico?.descricao || servico?.descricaoPostagem || servico?.descricaoServico || null;
   const imagemBase = servico?.imageUrl || servico?.providerPhoto || servico?.foto || null;

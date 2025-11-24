@@ -184,6 +184,7 @@ export default function ContaPrestador({ navigation, route }) {
           mask="99.999.999/9999-99"
           editable={false}
           selectTextOnFocus={false}
+          onChangeText={() => {}}
         />
 
         <Text style={styles.label}>E-mail</Text>

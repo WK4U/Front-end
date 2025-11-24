@@ -14,8 +14,11 @@ import { resetPassword } from "../../Componentes/Api/apis";
 export default function NovaSenha({ navigation, route }) {
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
+
   const destinoLogin = route?.params?.destinoLogin || "Home";
-  const tokenReset = route?.params?.tokenReset;
+
+  // 🔥 AGORA CORRETO — pega o code enviado pelo verifyPin
+  const code = route?.params?.code;
 
   const handleConfirmar = async () => {
     if (!senha.trim() || !confirmarSenha.trim()) {
@@ -30,15 +33,17 @@ export default function NovaSenha({ navigation, route }) {
       Alert.alert("Erro", "As senhas não coincidem.");
       return;
     }
-    if (!tokenReset) {
-      Alert.alert(
-        "Erro",
-        "Token de redefinição ausente. Volte e valide o PIN novamente."
-      );
+    console.log(">>> CODE RECEBIDO NA TELA:", code);
+    if (!code) {
+      Alert.alert("Erro", "Código ausente. Volte e valide o PIN novamente.");
       return;
     }
+
     try {
-      const msg = await resetPassword(tokenReset, senha);
+      console.log(">>> Enviando RESET com code:", code);
+
+      const msg = await resetPassword(code, senha);
+
       Alert.alert("Sucesso", String(msg || "Senha alterada com sucesso!"));
       navigation.navigate(destinoLogin);
     } catch (err) {
@@ -53,7 +58,6 @@ export default function NovaSenha({ navigation, route }) {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={Estilos.container}>
-        {/* Marca W4U */}
         <View
           style={{
             flexDirection: "row",
@@ -72,7 +76,6 @@ export default function NovaSenha({ navigation, route }) {
           </Text>
         </View>
 
-        {/* Campo senha */}
         <Text
           style={{
             width: "85%",
@@ -92,7 +95,6 @@ export default function NovaSenha({ navigation, route }) {
           onChangeText={setSenha}
         />
 
-        {/* Campo confirmar senha */}
         <Text
           style={{
             width: "85%",
@@ -107,7 +109,7 @@ export default function NovaSenha({ navigation, route }) {
         </Text>
         <TextInput
           style={[Estilos.input, { width: "85%" }]}
-          placeholder="Senha"
+          placeholder="Confirmar senha"
           secureTextEntry
           value={confirmarSenha}
           onChangeText={setConfirmarSenha}

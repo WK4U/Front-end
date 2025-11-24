@@ -36,19 +36,21 @@ export default function CodigoVerificacao({ navigation, route }) {
 
   const confirmar = async () => {
     const pin = values.join("");
+
     if (pin.length !== DIGITS) {
       Alert.alert("Atenção", `Digite os ${DIGITS} dígitos do PIN.`);
       return;
     }
+
     try {
-      const res = await verifyPin(email, pin);
-      const tokenReset = res?.tokenReset;
-      if (!tokenReset) {
-        Alert.alert("Erro", "Resposta inválida do servidor.");
+      const result = await verifyPin(email, pin);
+      // Se o backend validar, use o PIN digitado como code
+      if (!result || result === false) {
+        Alert.alert("Erro", "PIN inválido ou expirado.");
         return;
       }
       Alert.alert("PIN validado", "Você pode redefinir sua senha.");
-      navigation.navigate("NovaSenha", { email, tokenReset });
+      navigation.navigate("NovaSenha", { email, code: pin });
     } catch (err) {
       const msg =
         typeof err === "string"
