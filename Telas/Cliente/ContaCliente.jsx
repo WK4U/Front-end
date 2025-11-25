@@ -22,17 +22,13 @@ export default function ContaCliente({ navigation, route }) {
 
   useEffect(() => {
     const load = async () => {
-      // Bloqueia acesso se usuário for prestador (JURIDICO)
-      let rawUser = await getCurrentUser();
-      if (!rawUser) {
-        try { rawUser = await fetchMyProfile(); } catch {}
-      }
-      const isPrestador = !!(rawUser?.cnpj || /JURIDICO|PRESTADOR|PJ/i.test(String(rawUser?.tipoUsuario || rawUser?.perfil || rawUser?.tipo || '')));
-      if (isPrestador) {
-        navigation.replace('PaginaInicial');
-        return;
-      }
-      const fillFromUser = (user) => {
+        let rawUser = await getCurrentUser();
+        if (!rawUser) {
+          try { rawUser = await fetchMyProfile(); } catch {}
+        }
+        // Log para inspecionar os dados do usuário carregados
+        console.log('ContaCliente - Dados do usuário carregados:', rawUser);
+        const fillFromUser = (user) => {
         if (!user) return;
         setNome(user.nome || '');
         setTelefone(formatTelefone(user.telefone));

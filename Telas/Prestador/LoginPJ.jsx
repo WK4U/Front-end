@@ -18,15 +18,7 @@ export default function LoginPJ(props){
         try {
             await loginUser(email.trim(), senha.trim());
             const user = await getCurrentUser();
-            const tipo = String(user?.tipoUsuario || '').toUpperCase();
-            if (tipo !== 'JURIDICO') {
-                await logout();
-                Alert.alert(
-                    'Conta incorreta',
-                    'Esta conta é de cliente (PF). Use a tela de login de cliente.'
-                );
-                return;
-            }
+            const tipo = String(user?.tipoUsuario || '').toUpperCase();         
             props.navigation.reset({
                 index: 0,
                 routes: [{ name: 'MeusServicos' }],

@@ -21,18 +21,22 @@ export default function ContaPrestador({ navigation, route }) {
 
   useEffect(() => {
     const load = async () => {
-      // Bloqueia acesso se usuário for cliente (PF)
-      let rawUser = await getCurrentUser();
-      if (!rawUser) {
-        try { rawUser = await fetchMyProfile(); } catch {}
-      }
+      // Validação de tipo de usuário (PF/PJ) comentada temporariamente
+      /*
       const isCliente = !!(rawUser?.cpf || /FISICO|CLIENTE|PF/i.test(String(rawUser?.tipoUsuario || rawUser?.perfil || rawUser?.tipo || '')));
       if (isCliente && !rawUser?.cnpj) {
         navigation.replace('PaginaInicial');
         return;
       }
+      */
+      let rawUser = await getCurrentUser();
+      if (!rawUser) {
+        try { rawUser = await fetchMyProfile(); } catch {}
+      }
       const fillFromUser = (user) => {
         if (!user) return;
+        // LOG para inspecionar dados do usuário
+        console.log('[ContaPrestador] Dados do usuário carregados:', user);
         setNome(user.nome || '');
         setTelefone(formatTelefone(user.telefone));
         setEmail(user.email || '');

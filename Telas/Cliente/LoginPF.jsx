@@ -19,14 +19,8 @@ export default function LoginPF(props){
             await loginUser(email.trim(), senha.trim());
             const user = await getCurrentUser();
             const tipo = String(user?.tipoUsuario || '').toUpperCase();
-            if (tipo !== 'FISICO') {
-                await logout();
-                Alert.alert(
-                    'Conta incorreta',
-                    'Esta conta é de prestador (PJ). Use a tela de login de prestador.'
-                );
-                return;
-            }
+            
+        
             // Reset para evitar voltar à tela de login
             props.navigation.reset({ index: 0, routes: [{ name: 'PaginaInicial' }] });
         } catch (err) {

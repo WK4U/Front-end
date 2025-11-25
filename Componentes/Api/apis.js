@@ -11,19 +11,13 @@ const EXTRA_API =
   appJson?.expo?.extra?.apiUrl || null;
 
 const DEFAULT_HOST = (() => {
-  if (EXTRA_API) return EXTRA_API; // definido em app.json -> expo.extra.apiUrl
-  if (ENV_API) return ENV_API; // EXPO_PUBLIC_API_URL ou REACT_NATIVE_API_URL
-  if (Platform.OS === "android") return "http://10.0.2.2:8080"; // emulador Android
-  // Em iOS físico, localhost não funciona; use EXPO_PUBLIC_API_URL apontando para o IP da sua máquina
-  // Mantemos localhost apenas para simulador iOS em Mac.
-  if (Platform.OS === "ios") return "http://localhost:8080";
-  return "http://192.168.1.2:8080"; // fallback genérico para dispositivo físico (ajuste o IP)
+  // Sempre usar o backend do Render
+  return "https://backend-mtiz.onrender.com";
 })();
 
 const api = axios.create({
   baseURL: DEFAULT_HOST,
-  // Aumenta o timeout padrão para operações lentas/cold start (Render etc.)
-  timeout: 60000,
+  // Remove o timeout para permitir chamadas longas ao backend do Render
   headers: {
     Accept: "application/json",
   },
@@ -266,31 +260,7 @@ export const registerUser = async (userData, photo) => {
     const isPF = String(userData?.tipoUsuario || "").toUpperCase() === "FISICO";
     const isPJ =
       String(userData?.tipoUsuario || "").toUpperCase() === "JURIDICO";
-    const base = [
-      "/auth/register",
-      "/auth/registro",
-      "/auth/cadastrar",
-      "/usuario/register",
-      "/usuarios/register",
-      "/api/auth/register",
-    ];
-    const pfOnly = [
-      "/auth/register/pf",
-      "/cliente/register",
-      "/clientes/register",
-      "/api/cliente/register",
-    ];
-    const pjOnly = [
-      "/auth/register/pj",
-      "/prestador/register",
-      "/prestadores/register",
-      "/api/prestador/register",
-    ];
-    const candidates = [
-      ...base,
-      ...(isPF ? pfOnly : []),
-      ...(isPJ ? pjOnly : []),
-    ];
+    const candidates = ["/auth/register"];
 
     let lastError = null;
     for (const path of candidates) {
