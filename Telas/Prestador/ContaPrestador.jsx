@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import Foto from '../Foto/Foto.jsx';
 import { MaskedTextInput } from 'react-native-mask-text';
 import { somenteDigitos } from '../../Componentes/Utils/validacao';
+import HeaderPadrao from '../../Componentes/Header/HeaderPadrao';
 
 export default function ContaPrestador({ navigation, route }) {
   const [nome, setNome] = useState(route?.params?.nome || '');
@@ -21,24 +22,18 @@ export default function ContaPrestador({ navigation, route }) {
 
   useEffect(() => {
     const load = async () => {
-      // Validação de tipo de usuário (PF/PJ) comentada temporariamente
-      /*
-      const isCliente = !!(rawUser?.cpf || /FISICO|CLIENTE|PF/i.test(String(rawUser?.tipoUsuario || rawUser?.perfil || rawUser?.tipo || '')));
-      if (isCliente && !rawUser?.cnpj) {
-        navigation.replace('PaginaInicial');
-        return;
-      }
-      */
       let rawUser = await getCurrentUser();
       if (!rawUser) {
         try { rawUser = await fetchMyProfile(); } catch {}
       }
+      // LOG para inspecionar dados do usuário
+      console.log('[ContaPrestador] Dados do usuário carregados:', rawUser);
+      // Se não for prestador, não faz nada (não redireciona)
       const fillFromUser = (user) => {
         if (!user) return;
-        // LOG para inspecionar dados do usuário
-        console.log('[ContaPrestador] Dados do usuário carregados:', user);
         setNome(user.nome || '');
-        setTelefone(formatTelefone(user.telefone));
+        // Se vier do backend, já formatado, não formata novamente
+        setTelefone(user.telefone ? formatTelefone(user.telefone) : '');
         setEmail(user.email || '');
         setCnpj(formatCnpj(user.cnpj));
         const foto = resolveFoto(user);
@@ -121,18 +116,20 @@ export default function ContaPrestador({ navigation, route }) {
       return;
     }
     try {
-      setLoading(true);
-      const payload = { nome, email };
-      const telefoneLimpo = somenteDigitos(telefone);
-      if (telefoneLimpo) payload.telefone = telefoneLimpo;
-      const cnpjLimpo = somenteDigitos(cnpj);
-      if (cnpjLimpo) payload.cnpj = cnpjLimpo;
-      if (senha) payload.senha = senha;
-  await editProfile(payload, photo || undefined);
-  try { await fetchMyProfile(); } catch {}
-  setPhoto(null);
-      Alert.alert('Sucesso', 'Dados atualizados.');
-      navigation.goBack();
+        setLoading(true);
+        const payload = { nome, email };
+        // Envia o telefone como está no campo, sem formatação extra
+        const telefoneLimpo = somenteDigitos(telefone);
+        if (telefoneLimpo) payload.telefone = telefoneLimpo;
+        const cnpjLimpo = somenteDigitos(cnpj);
+        if (cnpjLimpo) payload.cnpj = cnpjLimpo;
+        if (senha) payload.senha = senha;
+        console.log('[SALVAR] Payload enviado:', payload);
+        await editProfile(payload, photo || undefined);
+        try { await fetchMyProfile(); } catch {}
+        setPhoto(null);
+        Alert.alert('Sucesso', 'Dados atualizados.');
+        navigation.goBack();
     } catch (e) {
       Alert.alert('Erro', e?.response?.data?.message || e.message || 'Falha ao atualizar.');
     } finally {
@@ -142,14 +139,9 @@ export default function ContaPrestador({ navigation, route }) {
 
   return (
     <View style={styles.page}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Ionicons name="chevron-back" size={22} color="#4A5B7A" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Conta</Text>
-        <View style={{ width: 32 }} />
+      <View style={{ paddingTop: 42 }}>
+        <HeaderPadrao navigation={navigation} hideProfileIcon={true} hideHomeIcon={true} />
       </View>
-
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         <View style={styles.avatarBox}>
           {previewFoto ? (
@@ -183,12 +175,11 @@ export default function ContaPrestador({ navigation, route }) {
 
         <Text style={styles.label}>CNPJ</Text>
         <MaskedTextInput
-          style={[styles.input, styles.readOnly]}
+          style={styles.input}
           value={cnpj}
           mask="99.999.999/9999-99"
-          editable={false}
-          selectTextOnFocus={false}
-          onChangeText={() => {}}
+          editable={true}
+          onChangeText={setCnpj}
         />
 
         <Text style={styles.label}>E-mail</Text>
@@ -228,6 +219,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingTop: 28, // Espaço extra do topo
   },
   headerBtn: { padding: 6 },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50' },
@@ -241,13 +233,14 @@ const styles = StyleSheet.create({
     color: '#5c6880',
   },
   btn: {
-    marginTop: 8, backgroundColor: '#7D95C9', height: 48, borderRadius: 12,
+    marginTop: 8, backgroundColor: '#6D6FB3', height: 48, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center'
   },
   btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   avatarBox: {
     alignItems: 'center',
     marginBottom: 20,
+    marginTop: 28, // Espaço extra do topo do conteúdo
   },
   avatar: {
     width: 110,

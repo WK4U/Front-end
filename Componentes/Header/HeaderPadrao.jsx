@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getCurrentUser, fetchMyProfile } from '../Api/apis.js';
 
 // Reusable top header: back | home | profile
-export default function HeaderPadrao({ navigation, onBack, onHome, onProfile }) {
+export default function HeaderPadrao({ navigation, onBack, onHome, onProfile, hideProfileIcon, hideHomeIcon, hideBackIcon }) {
   const [profileUser, setProfileUser] = useState(null);
 
   const resolveFoto = (user) => {
@@ -99,26 +99,32 @@ export default function HeaderPadrao({ navigation, onBack, onHome, onProfile }) 
   };
 
   return (
-    <View style={styles.row}>
-      <TouchableOpacity onPress={handleBack} style={styles.left} accessibilityLabel="Voltar">
-        <Ionicons name="chevron-back" size={28} color="#6D6FB3" />
-      </TouchableOpacity>
+    <View style={[styles.row, { marginTop: 32 }]}> {/* Adiciona espaçamento abaixo do status bar */}
+      {!hideBackIcon && (
+        <TouchableOpacity onPress={handleBack} style={styles.left} accessibilityLabel="Voltar">
+          <Ionicons name="chevron-back" size={28} color="#6D6FB3" />
+        </TouchableOpacity>
+      )}
 
-      <TouchableOpacity onPress={handleHome} style={styles.center} accessibilityLabel="Home">
-        <Ionicons name="home" size={36} color="#6D6FB3" />
-      </TouchableOpacity>
+      {!hideHomeIcon && (
+        <TouchableOpacity onPress={handleHome} style={styles.center} accessibilityLabel="Home">
+          <Ionicons name="home" size={36} color="#6D6FB3" />
+        </TouchableOpacity>
+      )}
 
-      <TouchableOpacity onPress={handleProfile} style={styles.right} accessibilityLabel="Perfil">
-        <View style={styles.profileCircle}>
-          {avatarUri ? (
-            <Image source={{ uri: avatarUri }} style={styles.profileImage} />
-          ) : initial ? (
-            <Text style={styles.profileInitial}>{initial}</Text>
-          ) : (
-            <Ionicons name="person" size={22} color="#586069" />
-          )}
-        </View>
-      </TouchableOpacity>
+      {!hideProfileIcon && (
+        <TouchableOpacity onPress={handleProfile} style={styles.right} accessibilityLabel="Perfil">
+          <View style={styles.profileCircle}>
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={styles.profileImage} />
+            ) : initial ? (
+              <Text style={styles.profileInitial}>{initial}</Text>
+            ) : (
+              <Ionicons name="person" size={22} color="#586069" />
+            )}
+          </View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

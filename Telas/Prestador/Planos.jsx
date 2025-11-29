@@ -28,37 +28,34 @@ export default function Planos({ navigation }) {
   };
 
   return (
-    <View style={[Estilos.container, { paddingTop: 12 }]}>      
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <HeaderPadrao navigation={navigation} />
-
-      {/* Título Plano Atual */}
-      <Text style={styles.sectionTitle}>Plano Atual</Text>
-      <View style={Estilos.currentPlanBox}>
-        <Text style={Estilos.currentPlanText}>{planoAtual}</Text>
+      <View style={{ flex: 1, alignItems: 'center', paddingTop: 0 }}>
+        <Text style={styles.sectionTitle}>Plano Atual</Text>
+        <View style={Estilos.currentPlanBox}>
+          <Text style={Estilos.currentPlanText}>{planoAtual}</Text>
+        </View>
+        <Text style={styles.sectionTitle}>Planos</Text>
+        <View style={{ width: '100%', alignItems: 'center', marginTop: 0 }}>
+          <TouchableOpacity
+            style={[Estilos.planButton, { marginTop: 8 }]}
+            activeOpacity={0.75}
+            disabled={selecionando}
+            onPress={() => mudarPlano('Basic')}
+          >
+            <Text style={Estilos.buttonTextPlan}>{selecionando && planoAtual !== 'Basic' ? 'Alterando...' : 'Basic'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[Estilos.planButton, { marginTop: 12 }]}
+            activeOpacity={0.75}
+            disabled={selecionando}
+            onPress={() => mudarPlano('Premium')}
+          >
+            <Text style={Estilos.buttonTextPlan}>{selecionando && planoAtual !== 'Premium' ? 'Alterando...' : 'Premium'}</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.note}>Toque em um plano para alterar. Valores e benefícios serão exibidos futuramente.</Text>
       </View>
-
-      {/* Título Planos */}
-      <Text style={styles.sectionTitle}>Planos</Text>
-
-      <TouchableOpacity
-        style={Estilos.planButton}
-        activeOpacity={0.75}
-        disabled={selecionando}
-        onPress={() => mudarPlano('Basic')}
-      >
-        <Text style={Estilos.buttonTextPlan}>{selecionando && planoAtual !== 'Basic' ? 'Alterando...' : 'Basic'}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={Estilos.planButton}
-        activeOpacity={0.75}
-        disabled={selecionando}
-        onPress={() => mudarPlano('Premium')}
-      >
-        <Text style={Estilos.buttonTextPlan}>{selecionando && planoAtual !== 'Premium' ? 'Alterando...' : 'Premium'}</Text>
-      </TouchableOpacity>
-
-      {/* Rodapé opcional */}
-      <Text style={styles.note}>Toque em um plano para alterar. Valores e benefícios serão exibidos futuramente.</Text>
     </View>
   );
 }

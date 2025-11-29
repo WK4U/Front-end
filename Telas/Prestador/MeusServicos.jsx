@@ -1,15 +1,25 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Share, Alert } from 'react-native';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Image, ActivityIndicator, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderPadrao from '../../Componentes/Header/HeaderPadrao';
 import { listarMeusServicos, getCurrentUser, fetchMyProfile } from '../../Componentes/Api/apis.js';
 
 export default function MeusServicos({ navigation }) {
+    // Avatar do prestador (simples, pode ser aprimorado para buscar foto real)
+    const [user, setUser] = useState(null);
+    useEffect(() => {
+      (async () => {
+        let u = await getCurrentUser();
+        if (!u) { try { u = await fetchMyProfile(); } catch {} }
+        setUser(u);
+      })();
+    }, []);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -53,15 +63,21 @@ export default function MeusServicos({ navigation }) {
     }
   }, []);
 
+  // Função para formatar categoria legível
+  const categoriaLegivel = (cat) =>
+    (cat || '')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
+
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <View style={styles.cardContent}>
         <View style={{ flex: 1 }}>
           {/* Título: categoria do serviço (tipoServico) */}
-          <Text style={styles.cardTitle}>{item?.tipoServico || ''}</Text>
-          {/* Descrição da postagem */}
+          <Text style={styles.cardTitle}>{categoriaLegivel(item?.tipoServico)}</Text>
+          {/* Descrição do que o prestador fez */}
           <Text style={styles.cardDesc} numberOfLines={2}>
-            {item?.descricaoPostagem || item?.descricao || 'Sem descrição'}
+            {item?.descricaoPostagem || item?.descricaoTrabalho || item?.descricao || 'Sem descrição do trabalho'}
           </Text>
           <View style={styles.cardInfoRow}>
             {/* Estrelas de avaliação */}
@@ -124,12 +140,35 @@ export default function MeusServicos({ navigation }) {
     </View>
   );
 
+  // Filtra os serviços pelo texto de busca
+  const filteredItems = items.filter(
+    (item) =>
+      item?.tipoServico?.toLowerCase().includes(search.toLowerCase()) ||
+      item?.descricaoPostagem?.toLowerCase().includes(search.toLowerCase()) ||
+      item?.descricaoTrabalho?.toLowerCase().includes(search.toLowerCase()) ||
+      item?.descricao?.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <View style={styles.page}>
-      <HeaderPadrao navigation={navigation} onHome={() => navigation.navigate('MeusServicos')} />
+      {/* Topo: Título e avatar grande */}
+      <View style={styles.headerTopBox}>
+        <Text style={styles.headerTitle}>Meus Serviços</Text>
+        <TouchableOpacity
+          style={styles.avatarBoxTop}
+          onPress={() => navigation.navigate('PerfilPrestador', { nome: user?.nome })}
+          activeOpacity={0.8}
+        >
+          {user?.foto ? (
+            <Image source={{ uri: user.foto }} style={styles.avatarTop} />
+          ) : (
+            <Ionicons name="person-circle-outline" size={72} color="#6D6FB3" />
+          )}
+        </TouchableOpacity>
+      </View>
 
       <FlatList
-        data={items}
+        data={filteredItems}
         keyExtractor={(it, idx) => String(it?.id || idx)}
         contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
         ListEmptyComponent={!loading ? (
@@ -144,7 +183,7 @@ export default function MeusServicos({ navigation }) {
         }
         ListFooterComponent={loading ? (
           <View style={{ paddingVertical: 12 }}>
-            <Text style={{ textAlign: 'center', color: '#7b8aa5' }}>Carregando...</Text>
+            <Text style={{ textAlign: 'center', color: '#6D6FB3' }}>Carregando...</Text>
           </View>
         ) : null}
       />
@@ -162,7 +201,7 @@ export default function MeusServicos({ navigation }) {
           onPress={() => navigation.navigate('AnunciarServico', { editing: false })}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" size="small" style={{ marginRight: 8 }} />
+            <ActivityIndicator color="#fff" size={20} style={{ marginRight: 8 }} />
           ) : <Ionicons name="add-circle" size={20} color="#fff" style={{ marginRight: 8 }} />}
           <Text style={styles.primaryButtonText}>{loading ? 'Carregando...' : 'Anunciar serviço'}</Text>
         </TouchableOpacity>
@@ -213,7 +252,7 @@ const styles = StyleSheet.create({
   cardActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#7D95C9',
+    backgroundColor: '#6D6FB3',
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -224,8 +263,48 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  headerTopBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    paddingBottom: 0,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#444C55',
+  },
+  avatarBoxTop: {
+    marginLeft: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarTop: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 2,
+    borderColor: '#6D6FB3',
+  },
+  searchLabel: {
+    fontSize: 15,
+    color: '#444C55',
+    fontWeight: '500',
+  },
+  searchInput: {
+    width: '100%',
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#6D6FB3',
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    fontSize: 15,
+    marginBottom: 8,
+  },
   emptyBox: { alignItems: 'center', marginTop: 48 },
-  emptyText: { marginTop: 8, color: '#7b8aa5' },
+  emptyText: { marginTop: 8, color: '#6D6FB3' },
   errorBar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 10, backgroundColor: '#ffe5e5' },
   errorText: { textAlign: 'center', color: '#a33' },
   bottomBar: {
@@ -238,9 +317,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#7D95C9',
+    backgroundColor: '#6D6FB3',
     borderRadius: 12,
     paddingVertical: 14,
+    padding:14,
   },
   primaryButtonText: {
     color: '#fff',

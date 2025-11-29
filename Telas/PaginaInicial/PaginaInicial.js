@@ -173,7 +173,7 @@ export default function PaginaInicial(props) {
 
   return (
     <View style={styles.mainContainer}>
-      <HeaderPadrao navigation={props.navigation} />
+      <HeaderPadrao navigation={props.navigation} hideBackIcon={true} />
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>Prestadores</Text>

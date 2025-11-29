@@ -55,6 +55,9 @@ export default function App() {
             setInitialRoute("Home");
           }
         }
+
+        // Validação global: tipoUsuario F só acessa login de cliente, J só acessa login de prestador
+        global.w4uTipoUsuario = user?.tipoUsuario || user?.tipo || "";
       } finally {
         setBooting(false);
       }

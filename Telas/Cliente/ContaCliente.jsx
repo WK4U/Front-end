@@ -184,12 +184,11 @@ export default function ContaCliente({ navigation, route }) {
         <TextInput style={styles.input} value={nome} onChangeText={setNome} />
 
         <Text style={styles.label}>Telefone</Text>
-        <MaskedTextInput
+        <TextInput
           style={styles.input}
           value={telefone}
-          onChangeText={(masked) => setTelefone(masked)}
+          onChangeText={setTelefone}
           keyboardType="phone-pad"
-          mask="(99) 99999-9999"
         />
 
         <Text style={styles.label}>Data de nascimento (dd/mm/aaaa)</Text>
@@ -202,6 +201,7 @@ export default function ContaCliente({ navigation, route }) {
           mask="999.999.999-99"
           editable={false}
           selectTextOnFocus={false}
+          onChangeText={() => {}}
         />
 
         <Text style={styles.label}>E-mail</Text>

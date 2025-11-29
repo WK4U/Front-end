@@ -1,8 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Text, View, TouchableOpacity, TextInput, Alert, ActivityIndicator } from "react-native";
 import Estilos from '../../Componentes/Estilos';
 import { loginUser, getCurrentUser, logout } from '../../Componentes/Api/apis';
 export default function LoginPF(props){
+            const [bloqueado, setBloqueado] = useState(false);
+
+            useEffect(() => {
+                const tipoUsuarioGlobal = global.w4uTipoUsuario && String(global.w4uTipoUsuario).toUpperCase();
+                if (tipoUsuarioGlobal && tipoUsuarioGlobal.includes("JURID")) {
+                    Alert.alert(
+                        "Atenção",
+                        "Seu perfil é de prestador. Por favor, acesse o login do prestador para entrar."
+                    );
+                    setBloqueado(true);
+                }
+            }, []);
+
+            if (bloqueado) {
+                return (
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+                        <Text style={{ color: '#c0392b', fontSize: 18, textAlign: 'center', margin: 24 }}>
+                            Seu perfil é de prestador. Por favor, acesse o login do prestador para entrar.
+                        </Text>
+                    </View>
+                );
+            }
+        // ...existing code...
    
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
@@ -19,8 +42,13 @@ export default function LoginPF(props){
             await loginUser(email.trim(), senha.trim());
             const user = await getCurrentUser();
             const tipo = String(user?.tipoUsuario || '').toUpperCase();
-            
-        
+            if (tipo.includes("JURID")) {
+                Alert.alert(
+                    "Atenção",
+                    "Seu perfil é de prestador. Por favor, acesse o login do prestador para entrar."
+                );
+                return;
+            }
             // Reset para evitar voltar à tela de login
             props.navigation.reset({ index: 0, routes: [{ name: 'PaginaInicial' }] });
         } catch (err) {

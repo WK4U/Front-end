@@ -85,9 +85,12 @@ export default function CadastroPF(props) {
 
     try {
       const result = await registerUser(userData, photo); // backend recebe multipart 'dados' + 'file'
-      Alert.alert("Sucesso!", String(result || "Conta registrada com sucesso!"));
-      // Após cadastro de cliente, ir para listagem de freelancers
-      props.navigation.reset({ index: 0, routes: [{ name: 'PaginaInicial' }] });
+      Alert.alert(
+        "Conta registrada com sucesso!",
+        "Por favor, faça o login para acessar sua conta."
+      );
+      // Após cadastro de cliente, ir para tela de login
+      props.navigation.reset({ index: 0, routes: [{ name: 'LoginPF' }] });
     } catch (err) {
       const errorMessage = typeof err === 'string' ? err : (err?.message || 'Erro no cadastro');
       Alert.alert("Erro no cadastro", String(errorMessage));

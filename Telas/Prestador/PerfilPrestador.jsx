@@ -47,12 +47,12 @@ export default function PerfilPrestador({ navigation, route }) {
 
   return (
     <View style={styles.page}>
-      <HeaderPadrao
-        navigation={navigation}
-        onProfile={() => navigation.navigate('ContaPrestador', { nome })}
-      />
+      
+   <View style={{ paddingTop: 42 }}>
+           <HeaderPadrao navigation={navigation} hideProfileIcon={true} hideHomeIcon={true} />
+         </View>
 
-      <ScrollView contentContainerStyle={{ padding: 24 }}>
+      <ScrollView contentContainerStyle={{ padding: 29 }}>
         <View style={styles.avatarBox}>
           {foto ? (
             <Image source={{ uri: foto }} style={{ width: 96, height: 96, borderRadius: 48 }} />
@@ -96,7 +96,7 @@ export default function PerfilPrestador({ navigation, route }) {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: '#fff' },
   // header handled by HeaderPadrao
-  avatarBox: { alignItems: 'center', marginBottom: 16 },
+  avatarBox: { alignItems: 'center', marginBottom: 16, marginTop: 56 },
   cameraBadge: {
     position: 'absolute', bottom: 28, right: 135,
     width: 28, height: 28, borderRadius: 14,
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   item: {
     borderWidth: 1, borderColor: '#e2e8f4', borderRadius: 10,
     paddingVertical: 14, paddingHorizontal: 16, marginBottom: 12,
-    backgroundColor: '#fff'
+    backgroundColor: '#fff',
   },
   itemText: { fontSize: 15, color: '#2c3e50' },
   logout: { borderColor: '#ffdddd', backgroundColor: '#fff5f5' },
