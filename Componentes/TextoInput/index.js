@@ -28,4 +28,4 @@ class TextoInput extends Component {
   }
 }
 
-export default TextInput;
+export default TextoInput;

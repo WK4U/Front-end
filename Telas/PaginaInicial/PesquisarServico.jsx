@@ -131,7 +131,7 @@ export default function PesquisarServico(props) {
                                             >
                                                 <ItemServico item={{
                                                     id: item.id,
-                                                    descricao: `${item.providerName} - ${item.providerCargo}`,
+                                                    descricao: `${item.providerName ? item.providerName : 'Prestador'}${item.providerCargo ? ' - ' + item.providerCargo : ''}`,
                                                     avaliacao: 5,
                                                     categoria: item.tipoServico
                                                 }} />

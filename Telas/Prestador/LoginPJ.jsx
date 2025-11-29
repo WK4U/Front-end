@@ -3,31 +3,14 @@ import { Text, View, TouchableOpacity, TextInput, Alert, ActivityIndicator } fro
 import Estilos from '../../Componentes/Estilos';
 import { loginUser, getCurrentUser, logout } from '../../Componentes/Api/apis';
 export default function LoginPJ(props){
-    const [bloqueado, setBloqueado] = useState(false);
+    // Removido estado bloqueado
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        const tipoUsuarioGlobal = global.w4uTipoUsuario && String(global.w4uTipoUsuario).toUpperCase();
-        if (tipoUsuarioGlobal && tipoUsuarioGlobal.includes("FIS")) {
-            Alert.alert(
-                "Atenção",
-                "Seu perfil é de cliente. Por favor, acesse o login do cliente para entrar."
-            );
-            setBloqueado(true);
-        }
-    }, []);
+    // Removido bloqueio inicial. O bloqueio será feito apenas após tentativa de login.
 
-    if (bloqueado) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-                <Text style={{ color: '#c0392b', fontSize: 18, textAlign: 'center', margin: 24 }}>
-                    Seu perfil é de cliente. Por favor, acesse o login do cliente para entrar.
-                </Text>
-            </View>
-        );
-    }
+    // Sempre renderiza o formulário de login
 
     const Entrar = async () => {
         if (loading) return;
@@ -44,10 +27,10 @@ export default function LoginPJ(props){
             const tipo = String(user?.tipoUsuario || '').toUpperCase();
             if (tipo === 'FISICO' || user?.cpf) {
                 Alert.alert(
-                    'Acesso negado',
+                    'Atenção',
                     'Seu perfil é de cliente. Por favor, acesse o login do cliente para entrar.'
                 );
-                setBloqueado(true);
+                // Mantém o formulário visível, não direciona nem bloqueia
                 return;
             }
             if (tipo === 'JURIDICO' || user?.cnpj) {

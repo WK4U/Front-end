@@ -309,7 +309,7 @@ export default function VisualizarServico({ navigation, route }) {
           try {
             const user = await getCurrentUser();
             const tipo = String(user?.tipoUsuario || '').toUpperCase();
-            const nome = user?.nome || name;
+            const nome = user?.nome || '';
             if (tipo === 'JURIDICO') {
               return navigation.navigate('PerfilPrestador', { nome });
             }
@@ -321,7 +321,7 @@ export default function VisualizarServico({ navigation, route }) {
       />
       <ScrollView contentContainerStyle={styles.content}>
         {/* Título do serviço: categoria/tipo cadastrado */}
-        <Text style={styles.serviceTitle}>{categoriaBase}</Text>
+        <Text style={styles.serviceTitle}>{String(categoriaBase || '')}</Text>
 
         {/* Descrição do serviço/postagem */}
         <Text style={styles.fieldLabel}>Descrição:</Text>
@@ -330,11 +330,11 @@ export default function VisualizarServico({ navigation, route }) {
             <ActivityIndicator size="small" color="#6D6FB3" />
           ) : (
             <Text style={styles.descriptionText}>
-              {descricaoBase || 'Sem descrição detalhada disponível.'}
+              {String(descricaoBase || 'Sem descrição detalhada disponível.')}
             </Text>
           )}
         </View>
-        {erroCarregar ? <Text style={styles.errorHint}>{erroCarregar}</Text> : null}
+        {erroCarregar ? <Text style={styles.errorHint}>{String(erroCarregar || '')}</Text> : null}
 
         {/* Foto de exemplo */}
         <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Foto de exemplo do serviço:</Text>
@@ -353,7 +353,7 @@ export default function VisualizarServico({ navigation, route }) {
         {/* Contatos */}
         <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Meios de contato:</Text>
         {(__DEV__ && (contato.phone || contato.email)) ? (
-          <Text style={{fontSize:10,color:'#7b8aa5'}}>Contato extraído: {contato.phone || 'sem telefone'} / {contato.email || 'sem email'}</Text>
+          <Text style={{fontSize:10,color:'#7b8aa5'}}>Contato extraído: {String(contato.phone || 'sem telefone')} / {String(contato.email || 'sem email')}</Text>
         ) : null}
         <View style={styles.contactsRow}>
           <TouchableOpacity style={styles.contactBtn} onPress={abrirWhatsApp}>

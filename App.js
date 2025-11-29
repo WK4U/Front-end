@@ -31,38 +31,9 @@ export default function App() {
   const [initialRoute, setInitialRoute] = useState("Home");
 
   useEffect(() => {
-    const bootstrap = async () => {
-      try {
-        const raw = await AsyncStorage.getItem("@w4u:user");
-        let user = null;
-        if (raw) {
-          try {
-            user = JSON.parse(raw);
-          } catch {}
-        }
-        if (user) {
-          // Decide rota inicial com base no tipoUsuario
-          const tipo = String(
-            user.tipoUsuario || user.tipo || ""
-          ).toUpperCase();
-          if (tipo.includes("JURID") || user.cnpj) {
-            // Prestador: ir direto para lista de seus serviços
-            setInitialRoute("MeusServicos");
-          } else if (tipo.includes("FIS") || user.cpf) {
-            // Cliente: ver listagem de freelancers
-            setInitialRoute("PaginaInicial");
-          } else {
-            setInitialRoute("Home");
-          }
-        }
-
-        // Validação global: tipoUsuario F só acessa login de cliente, J só acessa login de prestador
-        global.w4uTipoUsuario = user?.tipoUsuario || user?.tipo || "";
-      } finally {
-        setBooting(false);
-      }
-    };
-    bootstrap();
+    // Sempre inicia na tela Home, independente do usuário salvo
+    setInitialRoute("Home");
+    setBooting(false);
   }, []);
 
   if (booting) {
@@ -93,7 +64,11 @@ export default function App() {
         <Stack.Screen name="CadastroPJ" component={CadastroPJ} />
         <Stack.Screen name="PainelPrestador" component={PainelPrestador} />
         <Stack.Screen name="RecuperarSenha" component={RecuperarSenha} />
-        <Stack.Screen name="PaginaInicial" component={PaginaInicial} options={{ headerShown: false }} />
+        <Stack.Screen
+          name="PaginaInicial"
+          component={PaginaInicial}
+          options={{ headerShown: false }}
+        />
         {/* Tela de anúncio permanece registrada para navegação interna apenas de prestadores (guard no componente) */}
         <Stack.Screen
           name="AnunciarServico"
