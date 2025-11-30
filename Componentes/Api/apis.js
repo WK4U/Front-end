@@ -217,34 +217,40 @@ export const loginUser = async (email, senha) => {
 };
 
 export const registerUser = async (userData, photo) => {
-  // Enviar senha em plaintext; backend aplica BCrypt
-  const payload = { ...userData };
-
-  // Backend espera multipart com @RequestPart("dados") e (opcional) @RequestPart("file")
   const form = new FormData();
-  form.append("dados", JSON.stringify(payload));
+  form.append("dados", JSON.stringify(userData));
+  try {
+    // 1ª tentativa: timeout curto
+    return (await tryPost(8000)).data;
+  } catch (e1) {
+    console.warn("[registerUser] retry 1 falhou:", e1.message);
 
-  if (photo && photo.uri) {
-    const filename =
-      photo.fileName ||
-      photo.filename ||
-      photo.uri.split("/").pop() ||
-      "foto.jpg";
-    const type = photo.type || "image/jpeg";
-    form.append("file", { uri: photo.uri, name: filename, type });
+    try {
+      // 2ª tentativa: timeout intermediário
+      return (await tryPost(15000)).data;
+    } catch (e2) {
+      console.warn("[registerUser] retry 2 falhou:", e2.message);
+
+      // 3ª tentativa: timeout longo (2 minutos)
+      return (await tryPost(120000)).data;
+    }
   }
 
   try {
-    // Envia para o endpoint de registro
-    const res = await api.post("/auth/register", form, {
-      headers: { "x-skip-auth": true },
-      timeout: 60000,
-    });
-    return res.data;
-  } catch (error) {
-    const msg = error?.response?.data || error?.message || "Erro no cadastro";
-    console.error("Erro no cadastro:", msg);
-    throw msg;
+    // 1ª tentativa: timeout curto
+    return (await tryPost(8000)).data;
+  } catch (e1) {
+    console.warn("[registerUser] retry 1 falhou:", e1.message);
+
+    try {
+      // 2ª tentativa: timeout intermediário
+      return (await tryPost(15000)).data;
+    } catch (e2) {
+      console.warn("[registerUser] retry 2 falhou:", e2.message);
+
+      // 3ª tentativa: timeout longo
+      return (await tryPost(30000)).data;
+    }
   }
 };
 
@@ -440,7 +446,10 @@ export async function anunciarServico(tipoServico, descricaoPostagem, photo) {
     });
     return res.data;
   } catch (axiosErr) {
-    const msg = axiosErr?.response?.data || axiosErr?.message || "Erro ao anunciar serviço";
+    const msg =
+      axiosErr?.response?.data ||
+      axiosErr?.message ||
+      "Erro ao anunciar serviço";
     console.error("[ANUNCIAR] Erro:", msg);
     throw msg;
   }
