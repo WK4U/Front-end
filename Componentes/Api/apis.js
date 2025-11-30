@@ -212,46 +212,7 @@ export const loginUser = async (email, senha) => {
   }
 };
 
-// export const registerUser = async (userData, photo) => {
-//   const form = new FormData();
-//   form.append("dados", JSON.stringify(userData));
 
-//   // --- REINSERINDO A LÓGICA DA FOTO (estava faltando) ---
-//   if (photo && photo.uri) {
-//     const filename =
-//       photo.fileName ||
-//       photo.filename ||
-//       photo.uri.split("/").pop() ||
-//       "foto.jpg";
-//     const type = photo.type || "image/jpeg";
-//     form.append("file", { uri: photo.uri, name: filename, type });
-//   }
-//   // -------------------------------------------------------
-
-//   // Definição da função auxiliar tryPost
-//   const tryPost = (timeoutMs) => {
-//     return api.post("/auth/register", form, {
-//       timeout: timeoutMs,
-//     });
-//   };
-
-//   try {
-//     // 1ª tentativa: timeout curto (8s)
-//     return (await tryPost(8000)).data;
-//   } catch (e1) {
-//     console.warn("[registerUser] retry 1 falhou:", e1.message);
-
-//     try {
-//       // 2ª tentativa: timeout intermediário (15s)
-//       return (await tryPost(15000)).data;
-//     } catch (e2) {
-//       console.warn("[registerUser] retry 2 falhou:", e2.message);
-
-//       // 3ª tentativa: timeout longo (2 minutos)
-//       return (await tryPost(120000)).data;
-//     }
-//   }
-// };
 export const registerUser = async (userData, photo) => {
   console.log("--- INICIANDO REGISTER COM FETCH ---");
 
