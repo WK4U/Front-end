@@ -33,7 +33,7 @@ export default function HomePrestador(props) {
 
       {/* Imagem do trabalhador - menor para caber bem */}
       <Image
-        source={require("../../assets/PrestadorHome.png")}
+        source={require("../../assets/prestador_home.png")}
         style={{
           width: 160,
           height: 200,

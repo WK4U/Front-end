@@ -40,7 +40,7 @@ export default function App() {
     return (
       <View style={styles.bootContainer}>
         <Image
-          source={require("./assets/W4ULoadPrincipal.png")}
+          source={require("./assets/w4u_load_principal.png")}
           style={styles.bootImage}
         />
         <ActivityIndicator

@@ -97,7 +97,7 @@ export default function Home(props) {
       >
         <View style={styles.profileIconContainer}>
           <Image
-            source={require("../../assets/profile-icon1.png")}
+            source={require("../../assets/profile_icon1.png")}
             style={styles.profileIcon}
           />
           <View style={styles.dotContainer}>
@@ -124,7 +124,7 @@ export default function Home(props) {
             <View style={styles.dot} />
           </View>
           <Image
-            source={require("../../assets/profile-icon2.png")}
+            source={require("../../assets/profile_icon2.png")}
             style={styles.profileIcon}
           />
         </View>

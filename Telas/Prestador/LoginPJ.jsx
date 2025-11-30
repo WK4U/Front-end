@@ -69,6 +69,7 @@ export default function LoginPJ(props){
             <TextInput
                 style={Estilos.input}
                 placeholder="E-mail"
+                placeholderTextColor="#888888"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={email}
@@ -77,6 +78,7 @@ export default function LoginPJ(props){
             <TextInput
                 style={Estilos.input}
                 placeholder="Senha"
+                placeholderTextColor="#888888"
                 secureTextEntry
                 value={senha}
                 onChangeText={setSenha}

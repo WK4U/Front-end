@@ -110,6 +110,7 @@ export default function CadastroPJ(props) {
 
       <TextInput
         style={styles.input}
+        placeholderTextColor="#888888"
         placeholder="Nome completo"
         value={nome}
         onChangeText={setNome}
@@ -117,7 +118,7 @@ export default function CadastroPJ(props) {
       <MaskedTextInput
         style={styles.input}
         placeholder="Telefone"
-        keyboardType="phone-pad"
+        placeholderTextColor="#888888"
         mask="(99) 99999-9999"
         value={telefone}
         onChangeText={(masked, raw) => setTelefone(masked)}
@@ -125,6 +126,7 @@ export default function CadastroPJ(props) {
       <MaskedTextInput
         style={styles.input}
         placeholder="CNPJ"
+        placeholderTextColor="#888888"
         keyboardType="number-pad"
         mask="99.999.999/9999-99"
         value={cnpj}
@@ -133,6 +135,7 @@ export default function CadastroPJ(props) {
       <TextInput
         style={styles.input}
         placeholder="E-mail"
+        placeholderTextColor="#888888"
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
@@ -141,6 +144,7 @@ export default function CadastroPJ(props) {
       <TextInput
         style={styles.input}
         placeholder="Senha"
+        placeholderTextColor="#888888"
         secureTextEntry
         value={senha}
         onChangeText={setSenha}
@@ -148,6 +152,7 @@ export default function CadastroPJ(props) {
       <TextInput
         style={styles.input}
         placeholder="Confirmar senha"
+        placeholderTextColor="#888888"
         secureTextEntry
         value={confirmarSenha}
         onChangeText={setConfirmarSenha}

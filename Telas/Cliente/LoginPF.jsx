@@ -77,6 +77,7 @@ export default function LoginPF(props){
                 style={Estilos.input}
                 placeholder="E-mail"
                 keyboardType="email-address"
+                placeholderTextColor="#888888"
                 autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
@@ -84,6 +85,7 @@ export default function LoginPF(props){
             <TextInput
                 style={Estilos.input}
                 placeholder="Senha"
+                placeholderTextColor="#888888"
                 secureTextEntry
                 value={senha}
                 onChangeText={setSenha}

@@ -119,12 +119,14 @@ export default function CadastroPF(props) {
       <TextInput
         style={styles.input}
         placeholder="Nome completo"
+        placeholderTextColor="#888888"
         value={nome}
         onChangeText={setNome}
       />
       <MaskedTextInput
         style={styles.input}
         placeholder="Telefone"
+        placeholderTextColor="#888888"
         keyboardType="phone-pad"
         mask="(99) 99999-9999"
         value={telefone}
@@ -133,6 +135,7 @@ export default function CadastroPF(props) {
       <MaskedTextInput
         style={styles.input}
         placeholder="Data de nascimento (dd/mm/aaaa)"
+        placeholderTextColor="#888888"
         keyboardType="number-pad"
         mask="99/99/9999"
         value={dataNascimento}
@@ -142,6 +145,7 @@ export default function CadastroPF(props) {
         style={styles.input}
         placeholder="CPF"
         keyboardType="number-pad"
+        placeholderTextColor="#888888"
         mask="999.999.999-99"
         value={cpf}
         onChangeText={(masked, raw) => setCpf(masked)}
@@ -149,6 +153,7 @@ export default function CadastroPF(props) {
       <TextInput
         style={styles.input}
         placeholder="E-mail"
+        placeholderTextColor="#888888"
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
@@ -157,6 +162,7 @@ export default function CadastroPF(props) {
       <TextInput
         style={styles.input}
         placeholder="Senha"
+        placeholderTextColor="#888888"
         secureTextEntry
         value={senha}
         onChangeText={setSenha}
@@ -164,6 +170,7 @@ export default function CadastroPF(props) {
       <TextInput
         style={styles.input}
         placeholder="Confirmar senha"
+        placeholderTextColor="#888888"
         secureTextEntry
         value={confirmarSenha}
         onChangeText={setConfirmarSenha}

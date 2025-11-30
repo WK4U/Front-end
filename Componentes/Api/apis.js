@@ -1,10 +1,6 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-export const excluirServico = async (idServico, idPostagem) => {
-  return api.delete("/postagem/delete", {
-    params: { idServico, idPostagem },
-  });
-};
+
 import appJson from "../../app.json";
 const EXTRA_API =
   // Usa somente app.json (mais confiável e não exige expo-constants)
@@ -216,42 +212,102 @@ export const loginUser = async (email, senha) => {
   }
 };
 
+// export const registerUser = async (userData, photo) => {
+//   const form = new FormData();
+//   form.append("dados", JSON.stringify(userData));
+
+//   // --- REINSERINDO A LÓGICA DA FOTO (estava faltando) ---
+//   if (photo && photo.uri) {
+//     const filename =
+//       photo.fileName ||
+//       photo.filename ||
+//       photo.uri.split("/").pop() ||
+//       "foto.jpg";
+//     const type = photo.type || "image/jpeg";
+//     form.append("file", { uri: photo.uri, name: filename, type });
+//   }
+//   // -------------------------------------------------------
+
+//   // Definição da função auxiliar tryPost
+//   const tryPost = (timeoutMs) => {
+//     return api.post("/auth/register", form, {
+//       timeout: timeoutMs,
+//     });
+//   };
+
+//   try {
+//     // 1ª tentativa: timeout curto (8s)
+//     return (await tryPost(8000)).data;
+//   } catch (e1) {
+//     console.warn("[registerUser] retry 1 falhou:", e1.message);
+
+//     try {
+//       // 2ª tentativa: timeout intermediário (15s)
+//       return (await tryPost(15000)).data;
+//     } catch (e2) {
+//       console.warn("[registerUser] retry 2 falhou:", e2.message);
+
+//       // 3ª tentativa: timeout longo (2 minutos)
+//       return (await tryPost(120000)).data;
+//     }
+//   }
+// };
 export const registerUser = async (userData, photo) => {
-  const form = new FormData();
-  form.append("dados", JSON.stringify(userData));
-  try {
-    // 1ª tentativa: timeout curto
-    return (await tryPost(8000)).data;
-  } catch (e1) {
-    console.warn("[registerUser] retry 1 falhou:", e1.message);
+  console.log("--- INICIANDO REGISTER COM FETCH ---");
 
-    try {
-      // 2ª tentativa: timeout intermediário
-      return (await tryPost(15000)).data;
-    } catch (e2) {
-      console.warn("[registerUser] retry 2 falhou:", e2.message);
+  const formData = new FormData();
+  formData.append("dados", JSON.stringify(userData));
 
-      // 3ª tentativa: timeout longo (2 minutos)
-      return (await tryPost(120000)).data;
-    }
+  if (photo && photo.uri) {
+    const filename = photo.fileName || `foto-${Date.now()}.jpg`;
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+    formData.append("file", {
+      uri: photo.uri,
+      name: filename,
+      type: type,
+    });
   }
 
   try {
-    // 1ª tentativa: timeout curto
-    return (await tryPost(8000)).data;
-  } catch (e1) {
-    console.warn("[registerUser] retry 1 falhou:", e1.message);
+    const response = await fetch("https://backend-mtiz.onrender.com/auth/register", {
+      method: "POST",
+      body: formData,
+      headers: {
+        "Accept": "application/json",
+      },
+    });
 
-    try {
-      // 2ª tentativa: timeout intermediário
-      return (await tryPost(15000)).data;
-    } catch (e2) {
-      console.warn("[registerUser] retry 2 falhou:", e2.message);
+    const responseText = await response.text();
+    console.log("Status HTTP:", response.status);
+    console.log("Resposta do Servidor:", responseText);
 
-      // 3ª tentativa: timeout longo
-      return (await tryPost(30000)).data;
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status}: ${responseText}`);
     }
+
+    // --- CORREÇÃO AQUI ---
+    try {
+      // Tenta converter para JSON (caso o backend mude no futuro)
+      return JSON.parse(responseText);
+    } catch (jsonError) {
+      // Se der erro porque é texto puro ("Conta registrada..."), retorna o texto
+      console.log("A resposta não é JSON, retornando texto puro.");
+      return responseText;
+    }
+    // ---------------------
+    
+  } catch (error) {
+    console.error("ERRO NO FETCH:", error.message);
+    throw error;
   }
+};
+
+export const excluirServico = async (idServico, idPostagem) => {
+  return api.delete("/postagem/delete", {
+    params: { idServico, idPostagem },
+  });
 };
 
 export const editProfile = async (payload, photo) => {

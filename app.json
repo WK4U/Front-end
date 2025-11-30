@@ -4,11 +4,11 @@
     "slug": "W4U",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/W4ULoadPrincipal.png",
+    "icon": "./assets/w4u_load_principal.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/W4ULoadPrincipal.png",
+      "image": "./assets/w4u_load_principal.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -20,17 +20,24 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.lechzyn.W4U"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-  "extra": {
-    
-        "cloudinary": {
-          "cloudName": "YOUR_CLOUD_NAME",
-          "uploadPreset": "YOUR_UNSIGNED_PRESET"
-        }
+    "extra": {
+      "cloudinary": {
+        "cloudName": "YOUR_CLOUD_NAME",
+        "uploadPreset": "YOUR_UNSIGNED_PRESET"
+      },
+      "eas": {
+        "projectId": "ea85d2cd-b06d-4656-95b9-1e73e01ae740"
+      }
     },
     "plugins": [
       [
