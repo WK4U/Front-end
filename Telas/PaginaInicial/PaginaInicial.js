@@ -17,23 +17,7 @@ import HeaderPadrao from "../../Componentes/Header/HeaderPadrao";
 
 export default function PaginaInicial(props) {
   const [query, setQuery] = useState("");
-  useEffect(() => {
-    const unsub = props.navigation.addListener("focus", async () => {
-      const user = await getCurrentUser();
-      const isPrestador = !!(
-        user?.cnpj ||
-        user?.tipo === "PRESTADOR" ||
-        user?.perfil === "PRESTADOR" ||
-        (typeof user?.tipoUsuario === "string" &&
-          user?.tipoUsuario.toUpperCase() === "JURIDICO")
-      );
-      if (isPrestador) {
-        // prestador não deve ver listagem de prestadores
-        props.navigation.replace("MeusServicos");
-      }
-    });
-    return unsub;
-  }, [props.navigation]);
+  // Removido redirecionamento automático de PJ para MeusServicos
   const AbrirPesquisar = () => {
     props.navigation.navigate("PesquisarServico");
   };
@@ -162,10 +146,12 @@ export default function PaginaInicial(props) {
     const q = (query || "").toLowerCase();
     if (!q) return servicos;
     return servicos.filter((s) => {
-      const alvo = `${s.preview || ""} ${s.providerName || ""} ${
-        s.providerCargo || ""
-      } ${s.nomeServico || ""} ${s.tipoServico || ""} ${
-        s.descricao || ""
+      const alvo = `${typeof s.preview === "string" ? s.preview : ""} ${
+        typeof s.providerName === "string" ? s.providerName : ""
+      } ${typeof s.providerCargo === "string" ? s.providerCargo : ""} ${
+        typeof s.nomeServico === "string" ? s.nomeServico : ""
+      } ${typeof s.tipoServico === "string" ? s.tipoServico : ""} ${
+        typeof s.descricao === "string" ? s.descricao : ""
       }`.toLowerCase();
       return alvo.includes(q);
     });
@@ -219,9 +205,15 @@ export default function PaginaInicial(props) {
                   }
                   style={styles.profileImage}
                 />
-                <Text style={styles.freelancerName}>{item.providerName}</Text>
+                <Text style={styles.freelancerName}>
+                  {String(item.providerName || "Prestador")}
+                </Text>
                 <Text style={styles.freelancerRole}>
-                  {item.preview || item.providerCargo}
+                  {String(
+                    (typeof item.preview === "string" ? item.preview : "") ||
+                      item.providerCargo ||
+                      ""
+                  )}
                 </Text>
               </TouchableOpacity>
             ))

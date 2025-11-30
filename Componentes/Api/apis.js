@@ -217,152 +217,33 @@ export const loginUser = async (email, senha) => {
 };
 
 export const registerUser = async (userData, photo) => {
-  try {
-    // Pré-aquece o backend (ignora falha)
-    try {
-      await api.get("/postagem/getAll", {
-        timeout: 10000,
-        headers: { "x-skip-auth": true },
-      });
-    } catch {}
+  // Enviar senha em plaintext; backend aplica BCrypt
+  const payload = { ...userData };
 
-    // Enviar senha em plaintext; backend aplica BCrypt
-    const payload = { ...userData };
+  // Backend espera multipart com @RequestPart("dados") e (opcional) @RequestPart("file")
+  const form = new FormData();
+  form.append("dados", JSON.stringify(payload));
 
-    // Backend espera multipart com @RequestPart("dados") e (opcional) @RequestPart("file")
-    const form = new FormData();
-    // Envia 'dados' como campo de texto simples para máxima compatibilidade com Spring
-    // (alguns servidores ignoram Blob/filename). O controller pode usar @RequestPart("dados") String
-    // e converter para o DTO, ou configurar conversor para mapear direto para o POJO.
-    form.append("dados", JSON.stringify(payload));
-
-    // Se houver foto local, anexar como 'file'
-    if (photo && photo.uri) {
-      const filename =
-        photo.fileName ||
-        photo.filename ||
-        photo.uri.split("/").pop() ||
-        "foto.jpg";
-      const type = photo.type || "image/jpeg";
-      form.append("file", { uri: photo.uri, name: filename, type });
-    }
-
-    // Helper para POST com timeout customizado e headers forçando pular auth
-    const postTo = (path, ms) =>
-      api.post(path, form, {
-        // Importante no React Native: não setar manualmente Content-Type, o RN adiciona boundary automaticamente
-        // Usamos apenas x-skip-auth; não envie Authorization vazio para evitar comportamento estranho em alguns servidores
-        headers: { "x-skip-auth": true },
-        timeout: ms,
-      });
-
-    // Endpoints alternativos para compatibilidade com backends diferentes
-    const isPF = String(userData?.tipoUsuario || "").toUpperCase() === "FISICO";
-    const isPJ =
-      String(userData?.tipoUsuario || "").toUpperCase() === "JURIDICO";
-    const candidates = ["/auth/register"];
-
-    let lastError = null;
-    for (const path of candidates) {
-      try {
-        // Primeiro disparo com timeout padrão
-        const res = await postTo(path, 120000);
-        if (__DEV__) console.log("[registerUser] OK em:", path);
-        return res.data;
-      } catch (e) {
-        const status = e?.response?.status;
-        const isTimeout =
-          e?.code === "ECONNABORTED" || /timeout/i.test(String(e?.message));
-        // Um retry único em caso de timeout
-        if (isTimeout) {
-          try {
-            await new Promise((r) => setTimeout(r, 2500));
-            const res2 = await postTo(path, 150000);
-            if (__DEV__) console.log("[registerUser] OK no retry em:", path);
-            return res2.data;
-          } catch (e2) {
-            lastError = e2;
-            if (__DEV__)
-              console.warn(
-                `[registerUser] Timeout também no retry em ${path}:`,
-                e2?.message || e2
-              );
-            // tenta próximo candidate
-            continue;
-          }
-        }
-        // Para 409 (conflito: e.g., email/CPF/CNPJ já cadastrado) não adianta tentar outras rotas
-        if (Number(status) === 409) {
-          throw e;
-        }
-        // Para 403/404/405/400 tentamos próximos candidates
-        if ([400, 403, 404, 405].includes(Number(status))) {
-          lastError = e;
-          if (__DEV__)
-            console.warn(
-              `[registerUser] HTTP ${status} ao tentar ${path}, tentando próximo...`
-            );
-          continue;
-        }
-        // Outros erros: guarda e tenta próximo mesmo assim
-        lastError = e;
-        if (__DEV__)
-          console.warn(`[registerUser] Falha em ${path}:`, e?.message || e);
-        continue;
-      }
-    }
-    // Se chegou aqui, todas as tentativas falharam
-    throw lastError || new Error("Falha ao registrar usuário");
-  } catch (error) {
-    const status = error?.response?.status;
-    const data = error?.response?.data;
-    const path = error?.config?.url;
-    const msg =
-      (data && typeof data === "string" && data) ||
-      error.message ||
-      "Erro no registro";
-    console.error(
-      `Erro no registro${status ? ` (HTTP ${status})` : ""}${
-        path ? ` em ${path}` : ""
-      }:`,
-      msg
-    );
-    throw msg;
+  if (photo && photo.uri) {
+    const filename =
+      photo.fileName ||
+      photo.filename ||
+      photo.uri.split("/").pop() ||
+      "foto.jpg";
+    const type = photo.type || "image/jpeg";
+    form.append("file", { uri: photo.uri, name: filename, type });
   }
-};
 
-/**
- * Recuperação de senha
- */
-
-export const forgotPassword = async (email) => {
   try {
-    const res = await api.post("/auth/esqueceu-senha", { email });
-    console.log("[forgotPassword] Payload:", { email });
-    console.log("[forgotPassword] Resposta:", res.data);
-    return res.data; // string de confirmação
-  } catch (error) {
-    const msg =
-      error.response?.data ||
-      error.message ||
-      "Erro ao solicitar recuperação de senha";
-    console.error("Erro esqueceu-senha:", msg);
-    throw msg;
-  }
-};
-
-export const resetPassword = async (code, novaSenha) => {
-  try {
-    const res = await api.patch("/auth/redefinir-senha", {
-      code,
-      novaSenha,
+    // Envia para o endpoint de registro
+    const res = await api.post("/auth/register", form, {
+      headers: { "x-skip-auth": true },
+      timeout: 60000,
     });
-    console.log("[resetPassword] Resposta do backend:", res.data);
-    return res.data; // string "Senha redefinida com sucesso"
+    return res.data;
   } catch (error) {
-    const msg =
-      error.response?.data || error.message || "Erro ao redefinir senha";
-    console.error("Erro redefinir-senha:", msg);
+    const msg = error?.response?.data || error?.message || "Erro no cadastro";
+    console.error("Erro no cadastro:", msg);
     throw msg;
   }
 };
@@ -510,9 +391,8 @@ export const logout = async () => {
 };
 
 export async function anunciarServico(tipoServico, descricaoPostagem, photo) {
-  const formData = new FormData();
-
-  formData.append(
+  const form = new FormData();
+  form.append(
     "dados",
     JSON.stringify({
       tipoServico,
@@ -520,121 +400,51 @@ export async function anunciarServico(tipoServico, descricaoPostagem, photo) {
     })
   );
 
-  if (photo) {
-    formData.append("file", {
-      uri: photo.uri,
-      type: photo.type || "image/jpeg",
-      name: photo.fileName || "foto.jpg",
-    });
+  if (photo && photo.uri) {
+    const filename =
+      photo.fileName ||
+      photo.filename ||
+      photo.uri.split("/").pop() ||
+      "foto.jpg";
+    const type = photo.type || "image/jpeg";
+    form.append("file", { uri: photo.uri, name: filename, type });
   }
 
-  // 🔥 IMPORTANTE: nunca reutilizar formData (corrige Already read)
-  return api.post("/postagem/register", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-}
-
-export const editarServico = async (postagemId, payload, photo) => {
-  if (!postagemId) throw new Error("ID da postagem é obrigatório");
-  try {
-    const { cnpj } = await resolvePrestadorDocumento();
-    const ensureFields = (base) => {
-      const b = { ...(base || {}) };
-      if (!b.tipoServico) b.tipoServico = b.nome || "Serviço";
-      const desc = b.descricao || b.descricaoPostagem || "";
-      if (!b.descricaoPostagem) b.descricaoPostagem = desc;
-      return b;
-    };
-    const requestPayload = ensureFields({ ...(payload || {}), cnpj });
-    const form = new FormData();
-    form.append("dados", JSON.stringify(requestPayload));
-    if (photo && photo.uri) {
-      const filename =
-        photo.fileName ||
-        photo.filename ||
-        photo.uri.split("/").pop() ||
-        "foto.jpg";
-      const type = photo.type || "image/jpeg";
-      form.append("file", { uri: photo.uri, name: filename, type });
-    }
-    if (typeof __DEV__ !== "undefined" && __DEV__) {
-      try {
-        const parts = form?._parts || [];
-        console.log(
-          "[editarServico] multipart partes:",
-          parts.map(([key, value]) => ({
-            key,
-            type: typeof value,
-            hasUri: Boolean(value?.uri),
-            hasName: Boolean(value?.name),
-            sample:
-              typeof value === "string"
-                ? value.slice(0, 60)
-                : value && typeof value === "object"
-                ? { uri: value.uri, name: value.name, type: value.type }
-                : null,
-          }))
-        );
-      } catch (logErr) {
-        console.warn("[editarServico] Falha ao inspecionar FormData", logErr);
-      }
-    }
+  if (typeof __DEV__ !== "undefined" && __DEV__) {
     try {
-      const res = await api.put(`/postagem/edit/${postagemId}`, form, {
-        timeout: 60000,
-      });
-      return res.data;
-    } catch (axiosErr) {
-      const rawMsg = axiosErr?.response?.data || axiosErr?.message || "Erro";
-      const missingDados = /Required part 'dados' is not present/i.test(
-        String(rawMsg)
+      const parts = form?._parts || [];
+      console.log(
+        "[ANUNCIAR] multipart partes:",
+        parts.map(([key, value]) => ({
+          key,
+          type: typeof value,
+          hasUri: Boolean(value?.uri),
+          hasName: Boolean(value?.name),
+          sample:
+            typeof value === "string"
+              ? value.slice(0, 60)
+              : value && typeof value === "object"
+              ? { uri: value.uri, name: value.name, type: value.type }
+              : null,
+        }))
       );
-      const isTimeout =
-        axiosErr?.code === "ECONNABORTED" || /timeout/i.test(String(rawMsg));
-      if (missingDados) {
-        if (typeof __DEV__ !== "undefined" && __DEV__) {
-          console.warn(
-            "[editarServico] 'dados' ausente, reanexando e reenviando..."
-          );
-        }
-        const retryForm = new FormData();
-        retryForm.append("dados", JSON.stringify(requestPayload));
-        if (photo && photo.uri) {
-          const filename =
-            photo.fileName ||
-            photo.filename ||
-            photo.uri.split("/").pop() ||
-            "foto.jpg";
-          const type = photo.type || "image/jpeg";
-          retryForm.append("file", { uri: photo.uri, name: filename, type });
-        }
-        const retryRes = await api.put(
-          `/postagem/edit/${postagemId}`,
-          retryForm,
-          { timeout: 60000 }
-        );
-        return retryRes.data;
-      }
-      if (isTimeout) {
-        await new Promise((r) => setTimeout(r, 2000));
-        const retryRes = await api.put(`/postagem/edit/${postagemId}`, form, {
-          timeout: 60000,
-        });
-        return retryRes.data;
-      }
-      const msg = rawMsg || "Erro ao editar serviço";
-      console.error("Erro ao editar serviço:", msg);
-      throw msg;
+    } catch (logErr) {
+      console.warn("[ANUNCIAR] Falha ao inspecionar FormData", logErr);
     }
-  } catch (error) {
-    const msg =
-      error?.response?.data || error?.message || "Erro ao editar serviço";
-    console.error("Erro ao editar serviço:", msg);
+  }
+
+  try {
+    // Cria nova postagem usando o endpoint correto
+    const res = await api.post("/postagem/register", form, {
+      timeout: 60000,
+    });
+    return res.data;
+  } catch (axiosErr) {
+    const msg = axiosErr?.response?.data || axiosErr?.message || "Erro ao anunciar serviço";
+    console.error("[ANUNCIAR] Erro:", msg);
     throw msg;
   }
-};
+}
 
 // Lista serviços do prestador autenticado
 export const listarMeusServicos = async () => {

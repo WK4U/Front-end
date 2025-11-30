@@ -76,10 +76,13 @@ export default function CadastroPJ(props) {
     };
 
     try {
-  const result = await registerUser(userData, photo); // backend espera multipart 'dados' + 'file'
-  Alert.alert("Sucesso!", String(result || "Conta registrada com sucesso!"));
-  // Após cadastrar prestador, ir direto para seus serviços (dashboard)
-  props.navigation.reset({ index: 0, routes: [{ name: 'MeusServicos' }] });
+      const result = await registerUser(userData, photo); // backend espera multipart 'dados' + 'file'
+      Alert.alert(
+        "Conta registrada com sucesso!",
+        "Por favor, faça o login para acessar sua conta."
+      );
+      // Após cadastro de prestador, ir para tela de login do PJ
+      props.navigation.reset({ index: 0, routes: [{ name: 'LoginPJ' }] });
     } catch (err) {
       const errorMessage = typeof err === 'string' ? err : (err?.message || 'Erro no cadastro');
       Alert.alert("Erro no cadastro", String(errorMessage));

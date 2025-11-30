@@ -9,6 +9,12 @@ import { somenteDigitos } from '../../Componentes/Utils/validacao';
 import HeaderPadrao from '../../Componentes/Header/HeaderPadrao';
 
 export default function ContaPrestador({ navigation, route }) {
+    // Debug: logar tipos dos campos críticos
+    console.log('[ContaPrestador] Tipo nome:', typeof nome, nome);
+    console.log('[ContaPrestador] Tipo telefone:', typeof telefone, telefone);
+    console.log('[ContaPrestador] Tipo cnpj:', typeof cnpj, cnpj);
+    console.log('[ContaPrestador] Tipo email:', typeof email, email);
+    console.log('[ContaPrestador] Tipo previewFoto:', typeof previewFoto, previewFoto);
   const [nome, setNome] = useState(route?.params?.nome || '');
   const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
@@ -145,29 +151,30 @@ export default function ContaPrestador({ navigation, route }) {
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         <View style={styles.avatarBox}>
           {previewFoto ? (
-            <Image source={{ uri: previewFoto }} style={styles.avatar} />
+            <Image source={{ uri: String(previewFoto) }} style={styles.avatar} />
           ) : (
             <Ionicons name="person-circle-outline" size={96} color="#9AA6BD" />
           )}
+          <Text style={{ fontSize: 20, color: '#444C55', fontWeight: '500', marginTop: 8, marginBottom: 16, textAlign: 'center' }}>{String(nome ?? '')}</Text>
           <View style={styles.photoActions}>
             <TouchableOpacity style={styles.photoBtn} onPress={() => setCameraOpen(true)}>
               <Ionicons name="camera" size={18} color="#2c3e50" />
-              <Text style={styles.photoBtnText}>Usar câmera</Text>
+              <Text style={styles.photoBtnText}>{String('Usar câmera')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.photoBtn} onPress={pickFromGallery}>
               <Ionicons name="image" size={18} color="#2c3e50" />
-              <Text style={styles.photoBtnText}>Galeria</Text>
+              <Text style={styles.photoBtnText}>{String('Galeria')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <Text style={styles.label}>Nome</Text>
-        <TextInput style={styles.input} value={nome} onChangeText={setNome} />
+        <TextInput style={styles.input} value={String(nome ?? '')} onChangeText={setNome} />
 
         <Text style={styles.label}>Telefone</Text>
         <MaskedTextInput
           style={styles.input}
-          value={telefone}
+          value={String(telefone ?? '')}
           onChangeText={(masked) => setTelefone(masked)}
           keyboardType="phone-pad"
           mask="(99) 99999-9999"
@@ -176,14 +183,14 @@ export default function ContaPrestador({ navigation, route }) {
         <Text style={styles.label}>CNPJ</Text>
         <MaskedTextInput
           style={styles.input}
-          value={cnpj}
+          value={String(cnpj ?? '')}
           mask="99.999.999/9999-99"
           editable={true}
           onChangeText={setCnpj}
         />
 
         <Text style={styles.label}>E-mail</Text>
-        <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+        <TextInput style={styles.input} value={String(email ?? '')} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
 
         <Text style={styles.label}>Senha</Text>
         <TextInput style={styles.input} value={senha} onChangeText={setSenha} secureTextEntry />

@@ -77,7 +77,7 @@ export default function MeusServicos({ navigation }) {
           <Text style={styles.cardTitle}>{categoriaLegivel(item?.tipoServico)}</Text>
           {/* Descrição do que o prestador fez */}
           <Text style={styles.cardDesc} numberOfLines={2}>
-            {item?.descricaoPostagem || item?.descricaoTrabalho || item?.descricao || 'Sem descrição do trabalho'}
+            {String(item?.descricaoPostagem || item?.descricaoTrabalho || item?.descricao || 'Sem descrição do trabalho')}
           </Text>
           <View style={styles.cardInfoRow}>
             {/* Estrelas de avaliação */}
@@ -141,13 +141,17 @@ export default function MeusServicos({ navigation }) {
   );
 
   // Filtra os serviços pelo texto de busca
-  const filteredItems = items.filter(
-    (item) =>
-      item?.tipoServico?.toLowerCase().includes(search.toLowerCase()) ||
-      item?.descricaoPostagem?.toLowerCase().includes(search.toLowerCase()) ||
-      item?.descricaoTrabalho?.toLowerCase().includes(search.toLowerCase()) ||
-      item?.descricao?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredItems = items.filter((item) => {
+    const txt = search.toLowerCase();
+    const campo = (v) => (typeof v === "string" ? v.toLowerCase() : "").includes(txt);
+
+    return (
+      campo(item?.tipoServico) ||
+      campo(item?.descricaoPostagem) ||
+      campo(item?.descricaoTrabalho) ||
+      campo(item?.descricao)
+    );
+  });
 
   return (
     <View style={styles.page}>

@@ -39,10 +39,15 @@ const ItemServico = ({ item }) => (
             </View>
             
             <View style={styles.infoContainer}>
-                <EstrelasAvaliacao rating={item.avaliacao} />
+                <EstrelasAvaliacao rating={Number(item.avaliacao) || 0} />
                 <Text style={styles.descricaoText} numberOfLines={2}>
-                    {item.descricao}
+                    {String(item.descricao || '')}
                 </Text>
+                {item.categoria !== undefined && (
+                  <Text style={styles.descricaoText} numberOfLines={1}>
+                    {String(item.categoria || '')}
+                  </Text>
+                )}
             </View>
         </View>
     </TouchableOpacity>
@@ -130,10 +135,10 @@ export default function PesquisarServico(props) {
                                                 onPress={() => props.navigation.navigate('VisualizarServico', { servico: item })}
                                             >
                                                 <ItemServico item={{
-                                                    id: item.id,
-                                                    descricao: `${item.providerName ? item.providerName : 'Prestador'}${item.providerCargo ? ' - ' + item.providerCargo : ''}`,
+                                                    id: String(item.id),
+                                                    descricao: `${typeof item.providerName === 'string' ? item.providerName : ''}${typeof item.providerCargo === 'string' && item.providerCargo ? ' - ' + item.providerCargo : ''}`,
                                                     avaliacao: 5,
-                                                    categoria: item.tipoServico
+                                                    categoria: typeof item.tipoServico === 'string' ? item.tipoServico : '',
                                                 }} />
                                             </TouchableOpacity>
                                         )}

@@ -3,21 +3,31 @@ import { View, TouchableOpacity, StyleSheet, Image, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getCurrentUser, fetchMyProfile } from '../Api/apis.js';
 
-// Reusable top header: back | home | profile
-export default function HeaderPadrao({ navigation, onBack, onHome, onProfile, hideProfileIcon, hideHomeIcon, hideBackIcon }) {
+// Header padrão: botão voltar | home | perfil
+export default function HeaderPadrao({
+  navigation,
+  onBack,
+  onHome,
+  onProfile,
+  hideProfileIcon,
+  hideHomeIcon,
+  hideBackIcon
+}) {
   const [profileUser, setProfileUser] = useState(null);
 
   const resolveFoto = (user) => {
     if (!user) return null;
-    return (
+
+    const foto =
       user.foto ||
       user.imagemPerfil ||
       user.imageUrl ||
       user.urlFoto ||
       user.fotoUrl ||
       user.url_foto ||
-      null
-    );
+      null;
+
+    return typeof foto === 'string' ? foto : null;
   };
 
   const isPrestadorUser = (user) =>
@@ -25,12 +35,18 @@ export default function HeaderPadrao({ navigation, onBack, onHome, onProfile, hi
       user?.cnpj ||
       user?.tipo === 'PRESTADOR' ||
       user?.perfil === 'PRESTADOR' ||
-      (typeof user?.tipoUsuario === 'string' && user?.tipoUsuario.toUpperCase() === 'JURIDICO')
+      (typeof user?.tipoUsuario === 'string' &&
+        user?.tipoUsuario.toUpperCase() === 'JURIDICO')
     );
 
   const getInitial = (user) => {
-    const label = user?.nome || user?.name || user?.fullName || '';
-    return label.trim().charAt(0).toUpperCase();
+    const nome = user?.nome || user?.name || user?.fullName;
+
+    if (typeof nome === 'string' && nome.trim().length > 0) {
+      return nome.trim().charAt(0).toUpperCase();
+    }
+
+    return ''; // evita erro
   };
 
   const loadUser = useCallback(async () => {
@@ -38,14 +54,14 @@ export default function HeaderPadrao({ navigation, onBack, onHome, onProfile, hi
       const local = await getCurrentUser();
       if (local) {
         setProfileUser(local);
-        const hasName = !!local?.nome;
-        const hasFoto = !!resolveFoto(local);
+
+        const hasName = typeof local?.nome === 'string';
+        const hasFoto = resolveFoto(local);
         if (hasName && hasFoto) return;
       }
+
       const remote = await fetchMyProfile();
-      if (remote) {
-        setProfileUser(remote);
-      }
+      if (remote) setProfileUser(remote);
     } catch {
       setProfileUser((prev) => prev || null);
     }
@@ -53,6 +69,7 @@ export default function HeaderPadrao({ navigation, onBack, onHome, onProfile, hi
 
   useEffect(() => {
     loadUser();
+
     if (navigation && navigation.addListener) {
       const unsubscribe = navigation.addListener('focus', loadUser);
       return unsubscribe;
@@ -67,39 +84,39 @@ export default function HeaderPadrao({ navigation, onBack, onHome, onProfile, hi
     if (navigation?.canGoBack?.()) return navigation.goBack();
     if (navigation?.navigate) return navigation.navigate('PaginaInicial');
   };
+
   const handleHome = async () => {
     if (onHome) return onHome();
-    if (navigation && navigation.navigate) {
-      try {
-        const user = profileUser || (await getCurrentUser());
-        if (!profileUser && user) setProfileUser(user);
-        if (isPrestadorUser(user)) return navigation.navigate('MeusServicos');
-        return navigation.navigate('PaginaInicial');
-      } catch {
-        return navigation.navigate('PaginaInicial');
-      }
+    try {
+      const user = profileUser || (await getCurrentUser());
+      if (!profileUser && user) setProfileUser(user);
+
+      if (isPrestadorUser(user)) return navigation.navigate('MeusServicos');
+      return navigation.navigate('PaginaInicial');
+    } catch {
+      return navigation.navigate('PaginaInicial');
     }
   };
+
   const handleProfile = async () => {
     if (onProfile) return onProfile();
-    if (navigation && navigation.navigate) {
-      try {
-        const user = profileUser || (await getCurrentUser());
-        if (!profileUser && user) setProfileUser(user);
-        const nome = user?.nome || undefined;
-        if (isPrestadorUser(user)) {
-          return navigation.navigate('PerfilPrestador', { nome });
-        }
-        return navigation.navigate('PerfilCliente', { nome });
-      } catch {
-        // fallback para cliente se não souber
-        return navigation.navigate('PerfilCliente');
+    try {
+      const user = profileUser || (await getCurrentUser());
+      if (!profileUser && user) setProfileUser(user);
+
+      const nome = typeof user?.nome === 'string' ? user.nome : undefined;
+
+      if (isPrestadorUser(user)) {
+        return navigation.navigate('PerfilPrestador', { nome });
       }
+      return navigation.navigate('PerfilCliente', { nome });
+    } catch {
+      return navigation.navigate('PerfilCliente');
     }
   };
 
   return (
-    <View style={[styles.row, { marginTop: 32 }]}> {/* Adiciona espaçamento abaixo do status bar */}
+    <View style={[styles.row, { marginTop: 32 }]}>
       {!hideBackIcon && (
         <TouchableOpacity onPress={handleBack} style={styles.left} accessibilityLabel="Voltar">
           <Ionicons name="chevron-back" size={28} color="#6D6FB3" />
@@ -137,7 +154,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 0,
   },
   left: { width: 40, alignItems: 'flex-start' },
   center: { alignItems: 'center', flex: 1 },
