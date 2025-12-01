@@ -125,6 +125,11 @@ export default function ContaCliente({ navigation, route }) {
       Alert.alert('Atenção', 'As senhas não coincidem.');
       return;
     }
+
+    if(senha === '') {
+      Alert.alert('Atenção', 'Digite sua senha se quiser editar.');
+      return;
+    }
     let dataISO;
     if (dataNascimento) {
       const partes = dataNascimento.split('/');

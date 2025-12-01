@@ -59,9 +59,6 @@ export default function PerfilPrestador({ navigation, route }) {
           ) : (
             <Ionicons name="person-circle-outline" size={96} color="#9AA6BD" />
           )}
-          <TouchableOpacity style={styles.cameraBadge}>
-            <Ionicons name="camera" size={16} color="#fff" />
-          </TouchableOpacity>
           <Text style={styles.name}>{nome}</Text>
         </View>
 

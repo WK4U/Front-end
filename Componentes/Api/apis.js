@@ -374,8 +374,6 @@ export const editarServico = async (idPostagem, payload, photo) => {
 
   const form = new FormData();
 
-  // O Backend espera um JSON na parte "dados"
-  // Mesmo passando o ID na URL, enviamos no corpo também por garantia
   const dadosBody = {
     ...payload,
     id: idPostagem
@@ -407,9 +405,7 @@ export const editarServico = async (idPostagem, payload, photo) => {
   }
 
   try {
-    // --- CORREÇÃO PRINCIPAL BASEADA NO SEU CÓDIGO JAVA ---
-    // 1. A URL deve terminar com /edit/ID_DO_SERVICO
-    // 2. O Método deve ser PUT
+    
     const url = `https://backend-mtiz.onrender.com/postagem/edit/${idPostagem}`;
 
     const response = await fetch(url, {
