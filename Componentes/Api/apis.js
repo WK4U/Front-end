@@ -360,67 +360,87 @@ export const editProfile = async (payload, photo) => {
 };
 
 export const editarServico = async (idPostagem, payload, photo) => {
-  console.log("--- INICIANDO EDIÇÃO DE SERVIÇO COM FETCH ---");
+  console.log("--- INICIANDO EDIÇÃO (Backend: PUT /postagem/edit/{id}) ---");
+  console.log("ID alvo:", idPostagem);
 
   const token = await AsyncStorage.getItem("@w4u:token");
   if (!token) {
     throw new Error("Usuário não autenticado.");
   }
 
+  if (!idPostagem) {
+    throw new Error("Erro interno: ID do serviço não foi informado.");
+  }
+
   const form = new FormData();
-  
-  // Incluímos o ID dentro do objeto 'dados' para garantir que o backend o encontre
-  const dadosComId = {
+
+  // O Backend espera um JSON na parte "dados"
+  // Mesmo passando o ID na URL, enviamos no corpo também por garantia
+  const dadosBody = {
     ...payload,
-    id: idPostagem,
-    idPostagem: idPostagem
+    id: idPostagem
   };
+  
+  form.append("dados", JSON.stringify(dadosBody));
 
-  form.append("dados", JSON.stringify(dadosComId));
-
+  // Lógica da foto
   if (photo && photo.uri) {
-    const filename =
-      photo.fileName ||
-      photo.filename ||
-      photo.uri.split("/").pop() ||
-      `servico-edit-${Date.now()}.jpg`;
+    // Se for URL remota (já existente), ignoramos o envio de arquivo
+    if (String(photo.uri).startsWith('http')) {
+       console.log("Mantendo foto atual (URL).");
+    } else {
+       const filename =
+         photo.fileName ||
+         photo.filename ||
+         photo.uri.split("/").pop() ||
+         `edit-${Date.now()}.jpg`;
 
-    const match = /\.(\w+)$/.exec(filename);
-    const type = match ? `image/${match[1]}` : `image/jpeg`;
+       const match = /\.(\w+)$/.exec(filename);
+       const type = match ? `image/${match[1]}` : `image/jpeg`;
 
-    form.append("file", {
-      uri: photo.uri,
-      name: filename,
-      type: type,
-    });
+       form.append("file", {
+         uri: photo.uri,
+         name: filename,
+         type: type,
+       });
+    }
   }
 
   try {
-    // IMPORTANTE: Confirme se a rota no seu backend Java é /postagem/update
-    // Se não funcionar, tente /postagem/edit
-    const response = await fetch("https://backend-mtiz.onrender.com/postagem/update", {
-      method: "PUT", // Geralmente update é PUT, mas pode ser POST ou PATCH dependendo do Java
+    // --- CORREÇÃO PRINCIPAL BASEADA NO SEU CÓDIGO JAVA ---
+    // 1. A URL deve terminar com /edit/ID_DO_SERVICO
+    // 2. O Método deve ser PUT
+    const url = `https://backend-mtiz.onrender.com/postagem/edit/${idPostagem}`;
+
+    const response = await fetch(url, {
+      method: "PUT",
       body: form,
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${token}`
+        // NÃO defina Content-Type, o fetch faz isso sozinho para multipart
       },
     });
 
     const responseText = await response.text();
-    console.log("[EDITAR SERVICO] Status:", response.status);
+    console.log("[EDITAR] Status:", response.status);
 
     if (!response.ok) {
-      throw new Error(`Erro ${response.status}: ${responseText}`);
+      // Se der 403, o backend manda: "Erro ao editar: ..."
+      console.log("[EDITAR] Erro do Backend:", responseText);
+      throw new Error(responseText || `Erro ${response.status}`);
     }
 
+    // O backend retorna String: "Postagem e Serviço atualizados com sucesso!"
+    // Tentamos parsear JSON, se falhar, retornamos o texto.
     try {
       return JSON.parse(responseText);
     } catch (e) {
-      return responseText;
+      return { message: responseText };
     }
+
   } catch (error) {
-    console.error("[EDITAR SERVICO] ERRO:", error.message);
+    console.error("[EDITAR] FALHA:", error.message);
     throw error;
   }
 };
