@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { View, ActivityIndicator, Image, StyleSheet } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Home from "./Telas/Home";
 import CadastroPF from "./Telas/Cliente/CadastroPF";
 import LoginPF from "./Telas/Cliente/LoginPF";

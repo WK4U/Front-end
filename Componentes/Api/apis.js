@@ -271,32 +271,157 @@ export const excluirServico = async (idServico, idPostagem) => {
   });
 };
 
-export const editProfile = async (payload, photo) => {
-  // Backend exige multipart (dados + file opcional)
-  try {
-    const form = new FormData();
-    form.append("dados", JSON.stringify(payload || {}));
+// export const editProfile = async (payload, photo) => {
+//   // Backend exige multipart (dados + file opcional)
+//   try {
+//     const form = new FormData();
+//     form.append("dados", JSON.stringify(payload || {}));
 
-    if (photo && photo.uri) {
-      const filename =
-        photo.fileName ||
-        photo.filename ||
-        photo.uri.split("/").pop() ||
-        "foto.jpg";
-      const type = photo.type || "image/jpeg";
-      form.append("file", { uri: photo.uri, name: filename, type });
+//     if (photo && photo.uri) {
+//       const filename =
+//         photo.fileName ||
+//         photo.filename ||
+//         photo.uri.split("/").pop() ||
+//         "foto.jpg";
+//       const type = photo.type || "image/jpeg";
+//       form.append("file", { uri: photo.uri, name: filename, type });
+//     }
+
+//     const res = await api.patch("/auth/edit", form, {
+//       // Não setar Content-Type manualmente no RN
+//       timeout: 60000,
+//     });
+//     return res.data; // "Perfil atualizado com sucesso!"
+//   } catch (error) {
+//     const msg =
+//       error.response?.data || error.message || "Erro ao editar o perfil";
+//     console.error("Erro edit-profile:", msg);
+//     throw msg;
+//   }
+// };
+
+export const editProfile = async (payload, photo) => {
+  console.log("--- INICIANDO EDIÇÃO DE PERFIL COM FETCH ---");
+
+  const token = await AsyncStorage.getItem("@w4u:token");
+  if (!token) {
+    throw new Error("Usuário não autenticado.");
+  }
+
+  const form = new FormData();
+  form.append("dados", JSON.stringify(payload || {}));
+
+  // Lógica de foto segura para Android
+  if (photo && photo.uri) {
+    const filename =
+      photo.fileName ||
+      photo.filename ||
+      photo.uri.split("/").pop() ||
+      `perfil-${Date.now()}.jpg`;
+
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+    form.append("file", {
+      uri: photo.uri,
+      name: filename,
+      type: type,
+    });
+  }
+
+  try {
+    // Rota: /auth/edit | Método: PATCH
+    const response = await fetch("https://backend-mtiz.onrender.com/auth/edit", {
+      method: "PATCH",
+      body: form,
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+    });
+
+    const responseText = await response.text();
+    console.log("[EDIT PROFILE] Status:", response.status);
+
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status}: ${responseText}`);
     }
 
-    const res = await api.patch("/auth/edit", form, {
-      // Não setar Content-Type manualmente no RN
-      timeout: 60000,
-    });
-    return res.data; // "Perfil atualizado com sucesso!"
+    try {
+      return JSON.parse(responseText);
+    } catch (e) {
+      // Backend retorna texto puro "Perfil atualizado..."
+      return responseText;
+    }
   } catch (error) {
-    const msg =
-      error.response?.data || error.message || "Erro ao editar o perfil";
-    console.error("Erro edit-profile:", msg);
-    throw msg;
+    console.error("[EDIT PROFILE] ERRO:", error.message);
+    throw error;
+  }
+};
+
+export const editarServico = async (idPostagem, payload, photo) => {
+  console.log("--- INICIANDO EDIÇÃO DE SERVIÇO COM FETCH ---");
+
+  const token = await AsyncStorage.getItem("@w4u:token");
+  if (!token) {
+    throw new Error("Usuário não autenticado.");
+  }
+
+  const form = new FormData();
+  
+  // Incluímos o ID dentro do objeto 'dados' para garantir que o backend o encontre
+  const dadosComId = {
+    ...payload,
+    id: idPostagem,
+    idPostagem: idPostagem
+  };
+
+  form.append("dados", JSON.stringify(dadosComId));
+
+  if (photo && photo.uri) {
+    const filename =
+      photo.fileName ||
+      photo.filename ||
+      photo.uri.split("/").pop() ||
+      `servico-edit-${Date.now()}.jpg`;
+
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+    form.append("file", {
+      uri: photo.uri,
+      name: filename,
+      type: type,
+    });
+  }
+
+  try {
+    // IMPORTANTE: Confirme se a rota no seu backend Java é /postagem/update
+    // Se não funcionar, tente /postagem/edit
+    const response = await fetch("https://backend-mtiz.onrender.com/postagem/update", {
+      method: "PUT", // Geralmente update é PUT, mas pode ser POST ou PATCH dependendo do Java
+      body: form,
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+    });
+
+    const responseText = await response.text();
+    console.log("[EDITAR SERVICO] Status:", response.status);
+
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status}: ${responseText}`);
+    }
+
+    try {
+      return JSON.parse(responseText);
+    } catch (e) {
+      return responseText;
+    }
+  } catch (error) {
+    console.error("[EDITAR SERVICO] ERRO:", error.message);
+    throw error;
   }
 };
 
@@ -413,7 +538,74 @@ export const logout = async () => {
   }
 };
 
+// export async function anunciarServico(tipoServico, descricaoPostagem, photo) {
+//   const form = new FormData();
+//   form.append(
+//     "dados",
+//     JSON.stringify({
+//       tipoServico,
+//       descricaoPostagem,
+//     })
+//   );
+
+//   if (photo && photo.uri) {
+//     const filename =
+//       photo.fileName ||
+//       photo.filename ||
+//       photo.uri.split("/").pop() ||
+//       "foto.jpg";
+//     const type = photo.type || "image/jpeg";
+//     form.append("file", { uri: photo.uri, name: filename, type });
+//   }
+
+//   if (typeof __DEV__ !== "undefined" && __DEV__) {
+//     try {
+//       const parts = form?._parts || [];
+//       console.log(
+//         "[ANUNCIAR] multipart partes:",
+//         parts.map(([key, value]) => ({
+//           key,
+//           type: typeof value,
+//           hasUri: Boolean(value?.uri),
+//           hasName: Boolean(value?.name),
+//           sample:
+//             typeof value === "string"
+//               ? value.slice(0, 60)
+//               : value && typeof value === "object"
+//               ? { uri: value.uri, name: value.name, type: value.type }
+//               : null,
+//         }))
+//       );
+//     } catch (logErr) {
+//       console.warn("[ANUNCIAR] Falha ao inspecionar FormData", logErr);
+//     }
+//   }
+
+//   try {
+//     // Cria nova postagem usando o endpoint correto
+//     const res = await api.post("/postagem/register", form, {
+//       timeout: 60000,
+//     });
+//     return res.data;
+//   } catch (axiosErr) {
+//     const msg =
+//       axiosErr?.response?.data ||
+//       axiosErr?.message ||
+//       "Erro ao anunciar serviço";
+//     console.error("[ANUNCIAR] Erro:", msg);
+//     throw msg;
+//   }
+// }
+
 export async function anunciarServico(tipoServico, descricaoPostagem, photo) {
+  console.log("--- INICIANDO ANÚNCIO COM FETCH ---");
+
+  // 1. Pega o token salvo (Necessário pois é uma rota protegida)
+  const token = await AsyncStorage.getItem("@w4u:token");
+  if (!token) {
+    throw new Error("Usuário não autenticado. Faça login novamente.");
+  }
+
   const form = new FormData();
   form.append(
     "dados",
@@ -423,52 +615,59 @@ export async function anunciarServico(tipoServico, descricaoPostagem, photo) {
     })
   );
 
+  // 2. Tratamento da foto (Mesma lógica blindada do cadastro)
   if (photo && photo.uri) {
     const filename =
       photo.fileName ||
       photo.filename ||
       photo.uri.split("/").pop() ||
-      "foto.jpg";
-    const type = photo.type || "image/jpeg";
-    form.append("file", { uri: photo.uri, name: filename, type });
-  }
+      `anuncio-${Date.now()}.jpg`;
 
-  if (typeof __DEV__ !== "undefined" && __DEV__) {
-    try {
-      const parts = form?._parts || [];
-      console.log(
-        "[ANUNCIAR] multipart partes:",
-        parts.map(([key, value]) => ({
-          key,
-          type: typeof value,
-          hasUri: Boolean(value?.uri),
-          hasName: Boolean(value?.name),
-          sample:
-            typeof value === "string"
-              ? value.slice(0, 60)
-              : value && typeof value === "object"
-              ? { uri: value.uri, name: value.name, type: value.type }
-              : null,
-        }))
-      );
-    } catch (logErr) {
-      console.warn("[ANUNCIAR] Falha ao inspecionar FormData", logErr);
-    }
+    // Garante extensão e mime-type
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+    console.log("[ANUNCIAR] Anexando foto:", { uri: photo.uri, name: filename, type });
+
+    form.append("file", {
+      uri: photo.uri,
+      name: filename,
+      type: type,
+    });
   }
 
   try {
-    // Cria nova postagem usando o endpoint correto
-    const res = await api.post("/postagem/register", form, {
-      timeout: 60000,
+    // 3. Uso do FETCH direto (evita bugs do Axios com Multipart no Android)
+    const response = await fetch("https://backend-mtiz.onrender.com/postagem/register", {
+      method: "POST",
+      body: form,
+      headers: {
+        // NÃO defina Content-Type manualmente! O fetch define o boundary sozinho.
+        "Accept": "application/json",
+        // Injeta o token manualmente
+        "Authorization": `Bearer ${token}` 
+      },
     });
-    return res.data;
-  } catch (axiosErr) {
-    const msg =
-      axiosErr?.response?.data ||
-      axiosErr?.message ||
-      "Erro ao anunciar serviço";
-    console.error("[ANUNCIAR] Erro:", msg);
-    throw msg;
+
+    // 4. Tratamento da Resposta (Texto ou JSON)
+    const responseText = await response.text();
+    console.log("[ANUNCIAR] Status HTTP:", response.status);
+    console.log("[ANUNCIAR] Resposta:", responseText);
+
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status}: ${responseText}`);
+    }
+
+    try {
+      return JSON.parse(responseText);
+    } catch (jsonError) {
+      console.log("[ANUNCIAR] Resposta não é JSON, retornando texto puro.");
+      return responseText;
+    }
+
+  } catch (error) {
+    console.error("[ANUNCIAR] ERRO FATAL:", error.message);
+    throw error;
   }
 }
 
