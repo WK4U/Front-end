@@ -6,299 +6,143 @@ import { getCurrentUser } from '../../Componentes/Api/apis';
 import api from '../../Componentes/Api/apis';
 
 export default function VisualizarServico({ navigation, route }) {
-  // Aceita múltiplas chaves possíveis vindas de diferentes telas
   const incoming = route?.params || {};
   const paramServico = incoming?.servico || incoming?.item || incoming?.postagem || incoming?.data || null;
   const [servico, setServico] = useState(paramServico);
   const [loading, setLoading] = useState(false);
   const [erroCarregar, setErroCarregar] = useState(null);
-  // Busca nome do prestador real, nunca apenas 'Prestador' ou categoria
-  // Lógica reforçada para garantir o nome do prestador
+
+  // --- LÓGICA DE NOME ---
   let nomeBase = null;
   const tentativasNome = [
     servico?.providerName,
     servico?.nomePrestador,
     servico?.nome,
     servico?.usuario?.nome,
-    servico?.prestador?.nome,
-    servico?.owner?.nome,
-    servico?.provider?.nome,
-    servico?.user?.nome,
-    servico?.pessoaJuridica?.nome,
-    servico?.pessoa?.nome,
+    servico?.prestador?.nome, // Agora o backend manda o perfil completo aqui também
     servico?.raw?.nome,
-    servico?.rawDetalhe?.nome,
-    servico?.raw?.prestador?.nome,
-    servico?.raw?.provider?.nome,
-    servico?.raw?.owner?.nome,
-    servico?.raw?.usuario?.nome,
-    servico?.raw?.user?.nome,
-    servico?.raw?.pessoaJuridica?.nome,
-    servico?.raw?.pessoa?.nome,
-    servico?.rawDetalhe?.prestador?.nome,
-    servico?.rawDetalhe?.provider?.nome,
-    servico?.rawDetalhe?.owner?.nome,
-    servico?.rawDetalhe?.usuario?.nome,
-    servico?.rawDetalhe?.user?.nome,
-    servico?.rawDetalhe?.pessoaJuridica?.nome,
-    servico?.rawDetalhe?.pessoa?.nome,
-    typeof servico?.raw?.prestador === 'string' ? servico?.raw?.prestador : null,
-    typeof servico?.raw?.provider === 'string' ? servico?.raw?.provider : null,
-    typeof servico?.rawDetalhe?.prestador === 'string' ? servico?.rawDetalhe?.prestador : null,
-    typeof servico?.rawDetalhe?.provider === 'string' ? servico?.rawDetalhe?.provider : null,
+    'Prestador'
   ];
+
   for (const tentativa of tentativasNome) {
-    if (tentativa && typeof tentativa === 'string' && tentativa.trim().length > 0 && tentativa !== 'Prestador' && tentativa !== servico?.tipoServico && tentativa !== servico?.categoria && tentativa !== 'Serviço') {
+    if (tentativa && typeof tentativa === 'string' && tentativa.trim().length > 0 && 
+        tentativa !== 'Prestador' && tentativa !== servico?.tipoServico) {
       nomeBase = tentativa.trim();
       break;
     }
   }
-  if (!nomeBase) {
-    nomeBase = 'Prestador não identificado';
-  }
+
   const categoriaBase = servico?.providerCargo || servico?.tipoServico || servico?.categoria || 'Categoria do serviço';
   const descricaoBase = servico?.descricao || servico?.descricaoPostagem || servico?.descricaoServico || null;
   const imagemBase = servico?.imageUrl || servico?.providerPhoto || servico?.foto || null;
 
-  // Extrai contato (telefone / email) do serviço ou prestador (heurísticas variadas)
+  // --- LÓGICA DE CONTATO (ATUALIZADA PARA O NOVO BACKEND) ---
   const contato = useMemo(() => {
-    const s = servico || paramServico || {};
-    const raw = s.raw || s.rawDetalhe || {};
-    const prest = raw.prestador || raw.provider || raw.owner || raw.usuario || raw.user || s.prestador || {};
-    const collect = (obj) => {
-      if (!obj || typeof obj !== 'object') return {};
-      const phoneKeys = ['telefone','phone','celular','whatsapp','whats','fone','contato','numero','mobile'];
-      const emailKeys = ['email','mail','e_mail','contatoEmail','emailContato'];
-      let foundPhone = null; let foundEmail = null;
-      for (const [k,v] of Object.entries(obj)) {
-        if (typeof v === 'string') {
-          if (!foundPhone && phoneKeys.some(pk=>k.toLowerCase().includes(pk)) && /\d/.test(v)) foundPhone = v;
-          if (!foundEmail && emailKeys.some(ek=>k.toLowerCase().includes(ek)) && /@/.test(v)) foundEmail = v;
-        } else if (typeof v === 'object' && v) {
-          const deeper = collect(v);
-          if (!foundPhone && deeper.phone) foundPhone = deeper.phone;
-          if (!foundEmail && deeper.email) foundEmail = deeper.email;
-        }
-        if (foundPhone && foundEmail) break;
-      }
-      return { phone: foundPhone, email: foundEmail };
-    };
-    const primary = collect(s);
-    const secondary = collect(prest);
-    let phone = primary.phone || secondary.phone || null;
-    let email = primary.email || secondary.email || null;
-    // Sanitiza telefone: remove não dígitos e garante +55
+    // 1. Tenta pegar DIRETAMENTE da raiz (Graças à sua correção no Java)
+    let phone = servico?.telefone || servico?.rawDetalhe?.telefone || paramServico?.telefone;
+    let email = servico?.email || servico?.rawDetalhe?.email || paramServico?.email;
+
+    // 2. Se por acaso o backend falhar, usamos um fallback (plano B) simples
+    if (!phone || !email) {
+        const prest = servico?.prestador || servico?.rawDetalhe?.prestador || {};
+        // Tenta achar dentro de pessoaJuridica ou fisica
+        if (!phone) phone = prest?.pessoaJuridica?.telefone || prest?.pessoaFisica?.telefone || prest?.telefone;
+        if (!email) email = prest?.email || prest?.usuario?.email;
+    }
+
+    // Sanitiza telefone (Garante +55)
     if (phone) {
       let digits = phone.replace(/[^0-9]/g, '');
-      // Remove zeros à esquerda
-      digits = digits.replace(/^0+/, '');
-      // Se não começa com 55, adiciona
-      if (!digits.startsWith('55')) {
-        digits = '55' + digits;
+      digits = digits.replace(/^0+/, ''); 
+      if (digits.length >= 10 && digits.length <= 11) {
+         digits = '55' + digits;
       }
       phone = '+' + digits;
     }
+
     return { phone, email };
   }, [servico, paramServico]);
 
+  // --- EFEITOS ---
   useEffect(() => {
     const unsub = navigation.addListener('focus', async () => {
       const user = await getCurrentUser();
-      const isPrestador = !!(
-        user?.cnpj ||
-        user?.tipo === 'PRESTADOR' ||
-        user?.perfil === 'PRESTADOR' ||
-        (typeof user?.tipoUsuario === 'string' && user?.tipoUsuario.toUpperCase() === 'JURIDICO')
-      );
-      // Cliente pode visualizar; prestador só visualiza seus próprios (permitimos se veio via navegação interna)
-      if (isPrestador && servico && servico.cnpj && user?.cnpj && String(servico.cnpj) !== String(user.cnpj)) {
-        navigation.replace('MeusServicos');
-      }
+      const isPrestador = !!(user?.cnpj || user?.tipoUsuario === 'JURIDICO');
+      // Lógica opcional de redirecionamento
     });
     return unsub;
-  }, [navigation, servico]);
+  }, [navigation]);
 
   useEffect(() => {
     const fetchDetalhe = async () => {
-      if (!paramServico) {
-        if (!erroCarregar) setErroCarregar('Serviço não recebido na navegação.');
-        return;
-      }
-      if (__DEV__) {
-        try {
-          console.log('[VisualizarServico] paramServico inicial:', {
-            keys: Object.keys(paramServico || {}),
-            id: paramServico?.id,
-            providerName: paramServico?.providerName,
-            hasRaw: !!paramServico?.raw,
-          });
-          if (paramServico?.raw) {
-            console.log('[VisualizarServico] raw keys:', Object.keys(paramServico.raw));
-          }
-        } catch {}
-      }
-      // Tenta normalizar possíveis nomes de id (inclui inspeção em raw)
+      if (!paramServico) return;
+
       const raw = paramServico.raw || {};
-      let canonicalId = paramServico.id || paramServico.idPostagem || paramServico.idServico || paramServico.id_postagem || paramServico.postagemId || paramServico.postagemID || raw.id || raw.idPostagem || raw.idServico || raw.postagemId || raw.servicoId || raw.codigo || raw.uuid || null;
+      let canonicalId = paramServico.id || paramServico.idPostagem || raw.id || null;
+      
       if (!canonicalId) {
-        // Varredura genérica em chaves que contenham 'id'
-        for (const [k, v] of Object.entries(raw)) {
-          if (/id/i.test(k) && (typeof v === 'string' || typeof v === 'number')) {
-            canonicalId = v;
-            break;
-          }
-        }
+         // Tenta achar ID em qualquer lugar
+         Object.values(raw).forEach(v => {
+             if (!canonicalId && (typeof v === 'number' || (typeof v === 'string' && /^\d+$/.test(v)))) canonicalId = v;
+         });
       }
-      if (__DEV__) {
-        console.log('[VisualizarServico] canonicalId resolvido:', canonicalId, 'paramServico keys:', Object.keys(paramServico||{}));
-      }
-      if (!canonicalId) {
-        // Sem id para buscar detalhe: mantemos dados fornecidos
-        return;
-      }
+
+      if (!canonicalId) return;
+
       setLoading(true);
-      setErroCarregar(null);
+      
+      // Rotas para tentar buscar os dados frescos (com telefone e email)
       const candidates = [
-        `/postagem/${canonicalId}`,
-        `/postagem/get/${canonicalId}`,
-        `/postagem/find/${canonicalId}`,
+        `/postagem/${canonicalId}`, // Geralmente a melhor rota
         `/postagem/detalhe/${canonicalId}`,
+        `/postagem/get/${canonicalId}`,
       ];
-      const mergeDetalhe = (det) => {
-        if (!det || typeof det !== 'object') return servico || paramServico;
-        const original = servico || paramServico || {};
-        const prestadorRaw = det.prestador || det.provider || det.owner || det.usuario || det.user || original.prestador || null;
-        const nomeCandidato = (
-          prestadorRaw?.pessoaJuridica?.nome ||
-          prestadorRaw?.pessoa?.nome ||
-          prestadorRaw?.usuario?.nome ||
-          prestadorRaw?.nome ||
-          original.providerName ||
-          original.nomeServico ||
-          null
-        );
-        const cargoCandidato = (
-          prestadorRaw?.especialidade ||
-          prestadorRaw?.cargo ||
-          det.tipoServico ||
-          det.categoria ||
-          original.providerCargo ||
-          original.tipoServico ||
-          null
-        );
-        // Função para varrer qualquer chave que contenha 'desc' ou 'descricao'
-        const scanDescricao = (obj) => {
-          let best = null;
-          const visit = (o, depth = 0) => {
-            if (!o || typeof o !== 'object' || depth > 4) return;
-            for (const [k, v] of Object.entries(o)) {
-              if (typeof v === 'string') {
-                if (/descri|desc/i.test(k) && v.trim().length > 0) {
-                  if (!best || v.length > best.length) best = v;
-                }
-              } else if (typeof v === 'object') {
-                visit(v, depth + 1);
-              }
-            }
-          };
-          visit(obj, 0);
-          return best;
-        };
-        const descricaoCandidato = (
-          det.descricaoPostagem && det.descricaoPostagem.trim().length > 0 ? det.descricaoPostagem : null
-        ) || (
-          det.descricaoServico && det.descricaoServico.trim().length > 0 ? det.descricaoServico : null
-        ) || (
-          det.descricao && det.descricao.trim().length > 0 ? det.descricao : null
-        ) || scanDescricao(det) || null;
-        let finalDescricao = descricaoCandidato;
-        if (!finalDescricao || finalDescricao.trim().length === 0) {
-          // Preserva qualquer descrição não vazia já existente
-          const preserved =
-            (typeof original.descricao === 'string' && original.descricao.trim().length > 0 && original.descricao) ||
-            (typeof original.descricaoPostagem === 'string' && original.descricaoPostagem.trim().length > 0 && original.descricaoPostagem) ||
-            (typeof original.descricaoServico === 'string' && original.descricaoServico.trim().length > 0 && original.descricaoServico) ||
-            null;
-          if (preserved) finalDescricao = preserved;
-        }
-        const fotoCandidataPrimaria = (
-          det.foto || det.urlFoto || det.url_foto || det.fotoUrl || det.imagem || det.imagemUrl || det.image || det.imageUrl
-        );
-        const fotoPrestador = prestadorRaw && (prestadorRaw.foto || prestadorRaw.urlFoto || prestadorRaw.fotoUrl);
-        let finalFoto = fotoCandidataPrimaria || fotoPrestador || original.imageUrl || original.providerPhoto || null;
-        // Se detalhe devolve vazio mas já tínhamos foto, mantém
-        if (!finalFoto && (original.imageUrl || original.providerPhoto)) {
-          finalFoto = original.imageUrl || original.providerPhoto;
-        }
-        return {
-          ...original,
-          // Mantém det parcial para inspeção sem sobrescrever campos bons com vazio
-          id: original.id || det.id,
-          tipoServico: det.tipoServico || original.tipoServico,
-          nomeServico: det.nomeServico || original.nomeServico,
-          providerName: nomeCandidato || 'Prestador',
-          providerCargo: cargoCandidato || original.providerCargo || 'Serviço',
-          descricao: finalDescricao,
-          imageUrl: finalFoto,
-          providerPhoto: finalFoto,
-          rawDetalhe: det,
-        };
-      };
+
       for (const path of candidates) {
         try {
           const resp = await api.get(path);
           if (resp?.data) {
-            const merged = mergeDetalhe(resp.data);
-            setServico(merged);
-            if (__DEV__) {
-              console.log('[DETALHE MERGED]', {
-                id: merged.id,
-                providerName: merged.providerName,
-                providerCargo: merged.providerCargo,
-                hasImage: !!merged.imageUrl,
-                imageUrl: merged.imageUrl,
-                descricaoLen: merged.descricao ? merged.descricao.length : 0,
-                sampleDescricao: merged.descricao ? merged.descricao.slice(0,80) : null,
-              });
-            }
+            console.log(`[VISUALIZAR] Dados atualizados de ${path}`, resp.data);
+            
+            // Mescla os dados antigos com os novos que chegaram do backend
+            setServico(prev => ({
+                ...prev,
+                ...resp.data, // Aqui vem o { telefone: "...", email: "..." } novo
+                rawDetalhe: resp.data,
+                // Garante que a foto não suma se o backend mandar null
+                imageUrl: resp.data.foto || resp.data.urlFoto || prev?.imageUrl 
+            }));
+            
             setLoading(false);
             return;
           }
-        } catch (e) {
-          // tenta próximo
-          if (__DEV__) console.log('[DETALHE] falha em', path, e?.message);
-        }
+        } catch (e) { /* tenta prox */ }
       }
-      setErroCarregar('Não foi possível obter detalhes completos do serviço.');
       setLoading(false);
     };
+
     fetchDetalhe();
   }, [paramServico]);
 
   const mensagemPadrao = 'Vi seu serviço no Work For You. Podemos conversar?';
+  
   const abrirWhatsApp = () => {
     if (!contato.phone) {
-      Alert.alert('Contato indisponível', 'Prestador não possui telefone/WhatsApp cadastrado.');
+      Alert.alert('Contato', 'Telefone não disponível.');
       return;
     }
-    // Garante que o número está com +55
-    let numeroSanitizado = contato.phone ? contato.phone.replace(/[^0-9]/g, '') : '';
-    if (!numeroSanitizado.startsWith('55')) {
-      numeroSanitizado = '55' + numeroSanitizado;
-    }
-    const url = `https://wa.me/${numeroSanitizado}?text=${encodeURIComponent(mensagemPadrao)}`;
-    Linking.openURL(url).catch(() => Alert.alert('Não foi possível abrir o WhatsApp.'));
+    const numero = contato.phone.replace('+', '');
+    const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensagemPadrao)}`;
+    Linking.openURL(url).catch(() => Alert.alert('Erro', 'Não foi possível abrir o WhatsApp.'));
   };
 
   const enviarEmail = () => {
     if (!contato.email) {
-      Alert.alert('Contato indisponível', 'Prestador não possui e-mail cadastrado.');
+      Alert.alert('Contato', 'E-mail não disponível.');
       return;
     }
-    const subject = 'Contato via Work For You';
-    const body = mensagemPadrao;
-    const url = `mailto:${contato.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    Linking.openURL(url).catch(() => Alert.alert('Não foi possível abrir o e-mail.'));
+    const url = `mailto:${contato.email}?subject=Contato&body=${encodeURIComponent(mensagemPadrao)}`;
+    Linking.openURL(url).catch(() => Alert.alert('Erro', 'Não foi possível abrir o e-mail.'));
   };
 
   return (
@@ -306,63 +150,62 @@ export default function VisualizarServico({ navigation, route }) {
       <HeaderPadrao
         navigation={navigation}
         onProfile={async () => {
-          try {
-            const user = await getCurrentUser();
-            const tipo = String(user?.tipoUsuario || '').toUpperCase();
-            const nome = user?.nome || '';
-            if (tipo === 'JURIDICO') {
-              return navigation.navigate('PerfilPrestador', { nome });
-            }
-            return navigation.navigate('PerfilCliente', { nome });
-          } catch {
-            return navigation.navigate('PerfilCliente');
-          }
+             const user = await getCurrentUser();
+             // Redireciona para o perfil correto
+             const rota = user?.tipoUsuario === 'JURIDICO' || user?.cnpj ? 'PerfilPrestador' : 'PerfilCliente';
+             navigation.navigate(rota, { nome: user?.nome });
         }}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Título do serviço: categoria/tipo cadastrado */}
-        <Text style={styles.serviceTitle}>{String(categoriaBase ?? '')}</Text>
+        <Text style={styles.serviceTitle}>{String(categoriaBase)}</Text>
 
-        {/* Descrição do serviço/postagem */}
         <Text style={styles.fieldLabel}>Descrição:</Text>
         <View style={styles.descriptionBox}>
           {loading ? (
             <ActivityIndicator size="small" color="#6D6FB3" />
           ) : (
             <Text style={styles.descriptionText}>
-              {typeof descricaoBase === 'object' ? JSON.stringify(descricaoBase) : String(descricaoBase ?? 'Sem descrição detalhada disponível.')}
+              {String(descricaoBase || 'Sem descrição.')}
             </Text>
           )}
         </View>
-        {erroCarregar ? <Text style={styles.errorHint}>{typeof erroCarregar === 'object' ? JSON.stringify(erroCarregar) : String(erroCarregar ?? '')}</Text> : null}
 
-        {/* Foto de exemplo */}
-        <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Foto de exemplo do serviço:</Text>
-        <TouchableOpacity style={styles.photoButtonLarge} activeOpacity={0.8}>
+        <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Foto de exemplo:</Text>
+        <TouchableOpacity style={styles.photoButtonLarge} activeOpacity={1}>
           {imagemBase ? (
-            typeof imagemBase === 'string' ? (
-              <Image source={{ uri: imagemBase }} style={styles.photoPreviewLarge} />
-            ) : (
-              <Image source={imagemBase} style={styles.photoPreviewLarge} />
-            )
+            <Image source={{ uri: imagemBase }} style={styles.photoPreviewLarge} />
           ) : (
             <Feather name="camera" size={42} color="#4A5B7A" />
           )}
         </TouchableOpacity>
 
-        {/* Contatos */}
-        <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Meios de contato:</Text>
-        {(__DEV__ && (contato.phone || contato.email)) ? (
-          <Text style={{fontSize:10,color:'#7b8aa5'}}>Contato extraído: {typeof contato.phone === 'object' ? JSON.stringify(contato.phone) : String(contato.phone ?? 'sem telefone')} / {typeof contato.email === 'object' ? JSON.stringify(contato.email) : String(contato.email ?? 'sem email')}</Text>
-        ) : null}
+        <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Entrar em contato:</Text>
+        
+        {/* Mostra status dos botões (Visual apenas, não interfere no layout) */}
         <View style={styles.contactsRow}>
-          <TouchableOpacity style={styles.contactBtn} onPress={abrirWhatsApp}>
-            <Ionicons name="logo-whatsapp" size={24} color="#4A5B7A" />
+          <TouchableOpacity 
+            style={[styles.contactBtn, !contato.phone && styles.disabledBtn]} 
+            onPress={abrirWhatsApp}
+            disabled={!contato.phone}
+          >
+            <Ionicons name="logo-whatsapp" size={28} color={contato.phone ? "#25D366" : "#ccc"} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.contactBtn} onPress={enviarEmail}>
-            <Ionicons name="mail-outline" size={24} color="#4A5B7A" />
+          
+          <TouchableOpacity 
+            style={[styles.contactBtn, !contato.email && styles.disabledBtn]} 
+            onPress={enviarEmail}
+            disabled={!contato.email}
+          >
+            <Ionicons name="mail-outline" size={28} color={contato.email ? "#4A5B7A" : "#ccc"} />
           </TouchableOpacity>
         </View>
+        
+        {(!contato.phone && !contato.email && !loading) && (
+            <Text style={{textAlign:'center', color:'#999', marginTop:10, fontSize:12}}>
+                Nenhum contato informado pelo prestador.
+            </Text>
+        )}
+
       </ScrollView>
     </View>
   );
@@ -370,51 +213,24 @@ export default function VisualizarServico({ navigation, route }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: '#fff' },
-  header: {
-    height: 56,
-    paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#d8dfef',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  iconBtn: { padding: 4 },
-  content: { padding: 20 },
-  sectionLabel: { fontSize: 14, color: '#7b8aa5' },
-  categoryText: { fontSize: 12, color: '#9aa6bd', marginBottom: 12 },
-  serviceTitle: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50', marginBottom: 8 },
-  fieldLabel: { fontSize: 13, color: '#6b7c93', marginBottom: 6 },
+  content: { padding: 20, paddingBottom: 40 },
+  serviceTitle: { fontSize: 24, fontWeight: 'bold', color: '#2c3e50', marginBottom: 15 },
+  fieldLabel: { fontSize: 14, color: '#6b7c93', marginBottom: 8, fontWeight:'600' },
   descriptionBox: {
-    borderWidth: 1,
-    borderColor: '#c9d3e6',
-    borderRadius: 6,
-    padding: 10,
-    backgroundColor: '#fff',
+    borderWidth: 1, borderColor: '#eef2f6', borderRadius: 8, padding: 12, backgroundColor: '#f8f9fb', minHeight: 60
   },
-  descriptionText: { fontSize: 13, color: '#394b63' },
+  descriptionText: { fontSize: 15, color: '#394b63', lineHeight: 22 },
   photoButtonLarge: {
-    height: 220,
-    borderWidth: 1,
-    borderColor: '#c9d3e6',
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f5f7fb',
-    overflow: 'hidden',
-    marginTop: 4,
+    height: 220, borderWidth: 0, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0f4f8', overflow: 'hidden',
+    marginBottom: 10
   },
   photoPreviewLarge: { width: '100%', height: '100%', resizeMode: 'cover' },
-  contactsRow: { flexDirection: 'row', gap: 24, paddingTop: 6 },
-  errorHint: { marginTop: 8, fontSize: 12, color: '#a33' },
+  contactsRow: { flexDirection: 'row', gap: 20, marginTop: 10 },
   contactBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#c9d3e6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
+    width: 56, height: 56, borderRadius: 28, borderWidth: 1, borderColor: '#eee',
+    alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', 
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, elevation: 2
   },
+  disabledBtn: { opacity: 0.4, backgroundColor: '#f9f9f9', elevation: 0 }
 });
