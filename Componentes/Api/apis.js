@@ -554,64 +554,6 @@ export const logout = async () => {
   }
 };
 
-// export async function anunciarServico(tipoServico, descricaoPostagem, photo) {
-//   const form = new FormData();
-//   form.append(
-//     "dados",
-//     JSON.stringify({
-//       tipoServico,
-//       descricaoPostagem,
-//     })
-//   );
-
-//   if (photo && photo.uri) {
-//     const filename =
-//       photo.fileName ||
-//       photo.filename ||
-//       photo.uri.split("/").pop() ||
-//       "foto.jpg";
-//     const type = photo.type || "image/jpeg";
-//     form.append("file", { uri: photo.uri, name: filename, type });
-//   }
-
-//   if (typeof __DEV__ !== "undefined" && __DEV__) {
-//     try {
-//       const parts = form?._parts || [];
-//       console.log(
-//         "[ANUNCIAR] multipart partes:",
-//         parts.map(([key, value]) => ({
-//           key,
-//           type: typeof value,
-//           hasUri: Boolean(value?.uri),
-//           hasName: Boolean(value?.name),
-//           sample:
-//             typeof value === "string"
-//               ? value.slice(0, 60)
-//               : value && typeof value === "object"
-//               ? { uri: value.uri, name: value.name, type: value.type }
-//               : null,
-//         }))
-//       );
-//     } catch (logErr) {
-//       console.warn("[ANUNCIAR] Falha ao inspecionar FormData", logErr);
-//     }
-//   }
-
-//   try {
-//     // Cria nova postagem usando o endpoint correto
-//     const res = await api.post("/postagem/register", form, {
-//       timeout: 60000,
-//     });
-//     return res.data;
-//   } catch (axiosErr) {
-//     const msg =
-//       axiosErr?.response?.data ||
-//       axiosErr?.message ||
-//       "Erro ao anunciar serviço";
-//     console.error("[ANUNCIAR] Erro:", msg);
-//     throw msg;
-//   }
-// }
 
 export async function anunciarServico(tipoServico, descricaoPostagem, photo) {
   console.log("--- INICIANDO ANÚNCIO COM FETCH ---");
@@ -1037,6 +979,30 @@ export const getCurrentUser = async () => {
 export const setToken = async (token) => {
   if (token) await AsyncStorage.setItem("@w4u:token", token);
   else await AsyncStorage.removeItem("@w4u:token");
+};
+
+export const forgotPassword = async (email) => {
+  try {
+    // Endpoint do seu AuthController: @PostMapping("/esqueceu-senha")
+    const res = await api.post("/auth/esqueceu-senha", { email });
+    return res.data; // Retorna: "Código de redefinição enviado por email"
+  } catch (error) {
+    const msg = error.response?.data || error.message || "Erro ao enviar e-mail de recuperação";
+    console.error("[forgotPassword] Erro:", msg);
+    throw msg;
+  }
+};
+
+export const resetPassword = async (code, novaSenha) => {
+  try {
+    // Endpoint do seu AuthController: @PatchMapping("/redefinir-senha")
+    const res = await api.patch("/auth/redefinir-senha", { code, novaSenha });
+    return res.data; // Retorna: "Senha redefinida com sucesso"
+  } catch (error) {
+    const msg = error.response?.data || error.message || "Erro ao redefinir senha";
+    console.error("[resetPassword] Erro:", msg);
+    throw msg;
+  }
 };
 
 export default api;

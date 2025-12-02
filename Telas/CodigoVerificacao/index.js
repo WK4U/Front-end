@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,21 +8,30 @@ import {
   Alert,
   Keyboard,
   TouchableWithoutFeedback,
+  ActivityIndicator
 } from "react-native";
 import Estilos from "../../Componentes/Estilos";
 import { verifyPin } from "../../Componentes/Api/apis";
 
 export default function CodigoVerificacao({ navigation, route }) {
   const email = route?.params?.email;
-  const DIGITS = 5; // Mantemos 5 dígitos como no fluxo original
+  const DIGITS = 5;
   const [values, setValues] = useState(Array(DIGITS).fill(""));
+  const [loading, setLoading] = useState(false); 
   const inputsRef = useRef([]);
+
+  useEffect(() => {
+    setTimeout(() => {
+        inputsRef.current[0]?.focus();
+    }, 500);
+  }, []);
 
   const onChangeDigit = (text, index) => {
     const val = text.replace(/[^0-9]/g, "").slice(-1);
     const next = [...values];
     next[index] = val;
     setValues(next);
+
     if (val && index < DIGITS - 1) {
       inputsRef.current[index + 1]?.focus();
     }
@@ -31,6 +40,9 @@ export default function CodigoVerificacao({ navigation, route }) {
   const onKeyPress = (e, index) => {
     if (e.nativeEvent.key === "Backspace" && !values[index] && index > 0) {
       inputsRef.current[index - 1]?.focus();
+      const next = [...values];
+      next[index - 1] = ""; 
+      setValues(next);
     }
   };
 
@@ -38,76 +50,65 @@ export default function CodigoVerificacao({ navigation, route }) {
     const pin = values.join("");
 
     if (pin.length !== DIGITS) {
-      Alert.alert("Atenção", `Digite os ${DIGITS} dígitos do PIN.`);
+      Alert.alert("Atenção", `Digite os ${DIGITS} números do código.`);
       return;
     }
 
+    setLoading(true);
     try {
-      const result = await verifyPin(email, pin);
-      // Se o backend validar, use o PIN digitado como code
-      if (!result || result === false) {
-        Alert.alert("Erro", "PIN inválido ou expirado.");
-        return;
-      }
-      Alert.alert("PIN validado", "Você pode redefinir sua senha.");
+      await verifyPin(email, pin);
+      
+      Alert.alert("Sucesso", "Código validado!");
+      
+
       navigation.navigate("NovaSenha", { email, code: pin });
+
     } catch (err) {
-      const msg =
-        typeof err === "string"
-          ? err
-          : err?.erro || err?.message || "Falha ao validar PIN";
+      const msg = typeof err === "string" 
+        ? err 
+        : err?.response?.data?.erro || "Código inválido ou expirado.";
+      
       Alert.alert("Erro", String(msg));
+      
+      
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={Estilos.container}>
-        {/* Marca W4U */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "baseline",
-            marginBottom: 28,
-          }}
-        >
-          <Text style={{ fontSize: 56, fontWeight: "bold", color: "#444C55" }}>
-            W
-          </Text>
-          <Text style={{ fontSize: 56, fontWeight: "bold", color: "#6D6FB3" }}>
-            4
-          </Text>
-          <Text style={{ fontSize: 56, fontWeight: "bold", color: "#444C55" }}>
-            U
-          </Text>
+        <View style={{ flexDirection: "row", alignItems: "baseline", marginBottom: 28 }}>
+          <Text style={{ fontSize: 56, fontWeight: "bold", color: "#444C55" }}>W</Text>
+          <Text style={{ fontSize: 56, fontWeight: "bold", color: "#6D6FB3" }}>4</Text>
+          <Text style={{ fontSize: 56, fontWeight: "bold", color: "#444C55" }}>U</Text>
         </View>
 
-        {/* Label */}
-        <Text
-          style={{
-            width: "85%",
-            color: "#444C55",
-            fontSize: 18,
-            fontWeight: "700",
-            marginBottom: 10,
-          }}
-        >
-          PIN
+        <Text style={{ fontSize: 16, color: "#666", marginBottom: 20, textAlign: 'center', paddingHorizontal: 20 }}>
+            Enviamos um código para {email}
         </Text>
 
-        {/* PIN boxes */}
+        <Text style={{ width: "85%", color: "#444C55", fontSize: 18, fontWeight: "700", marginBottom: 10 }}>
+          Código de Verificação
+        </Text>
+
         <View style={styles.pinRow}>
           {values.map((v, i) => (
             <TextInput
               key={i}
               ref={(el) => (inputsRef.current[i] = el)}
-              style={styles.pinBox}
+              style={[
+                  styles.pinBox, 
+                  (v ? styles.pinBoxFilled : {}) 
+              ]}
               value={v}
               onChangeText={(t) => onChangeDigit(t, i)}
               onKeyPress={(e) => onKeyPress(e, i)}
               keyboardType="number-pad"
               maxLength={1}
-              returnKeyType="next"
+              selectTextOnFocus={true}
+              returnKeyType={i === DIGITS - 1 ? "done" : "next"}
             />
           ))}
         </View>
@@ -117,11 +118,14 @@ export default function CodigoVerificacao({ navigation, route }) {
           style={[Estilos.primaryButton, { width: "85%", marginTop: 32 }]}
           activeOpacity={0.7}
           onPress={confirmar}
+          disabled={loading} 
         >
-          <Text style={Estilos.buttonTextPrimary}>Confirmar Pin</Text>
+          {loading ? (
+             <ActivityIndicator color="#FFF" />
+          ) : (
+             <Text style={Estilos.buttonTextPrimary}>Validar Código</Text>
+          )}
         </TouchableOpacity>
-
-        {/* Sem exibição de PIN em produção */}
       </View>
     </TouchableWithoutFeedback>
   );
@@ -130,18 +134,24 @@ export default function CodigoVerificacao({ navigation, route }) {
 const styles = StyleSheet.create({
   pinRow: {
     flexDirection: "row",
-    gap: 12,
+    justifyContent: "space-between", 
+    width: "85%",
     marginTop: 8,
   },
   pinBox: {
-    width: 48,
-    height: 56,
+    width: 50,
+    height: 60,
     borderWidth: 2,
-    borderColor: "#6D6FB3",
-    borderRadius: 8,
+    borderColor: "#e0e0e0", 
+    borderRadius: 10,
     textAlign: "center",
-    fontSize: 20,
+    fontSize: 24,
+    fontWeight: "bold",
     color: "#444C55",
+    backgroundColor: "#f9f9f9",
+  },
+  pinBoxFilled: {
+    borderColor: "#6D6FB3", // Fica roxo quando preenchido
     backgroundColor: "#fff",
   },
 });
