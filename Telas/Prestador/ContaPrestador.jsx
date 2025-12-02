@@ -121,6 +121,13 @@ export default function ContaPrestador({ navigation, route }) {
       Alert.alert('Atenção', 'As senhas não coincidem.');
       return;
     }
+
+    if(senha === '') {
+          Alert.alert('Atenção', 'Digite sua senha se quiser editar.');
+          return;
+    }
+
+
     try {
         setLoading(true);
         const payload = { nome, email };
