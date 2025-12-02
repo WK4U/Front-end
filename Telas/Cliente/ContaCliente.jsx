@@ -26,35 +26,38 @@ export default function ContaCliente({ navigation, route }) {
         if (!rawUser) {
           try { rawUser = await fetchMyProfile(); } catch {}
         }
-        // Log para inspecionar os dados do usuário carregados
-        console.log('ContaCliente - Dados do usuário carregados:', rawUser);
+        
+        console.log('ContaCliente - Dados carregados:', rawUser);
+        
         const fillFromUser = (user) => {
-        if (!user) return;
-        setNome(user.nome || '');
-        setTelefone(formatTelefone(user.telefone));
-        setEmail(user.email || '');
-        setCpf(formatCpf(user.cpf));
-        const foto = resolveFoto(user);
-        setPreviewFoto(foto);
-        if (user.dataNascimento) {
-          try {
-            const iso = String(user.dataNascimento);
-            const d = new Date(iso);
-            if (!isNaN(d)) {
-              const dd = String(d.getDate()).padStart(2, '0');
-              const mm = String(d.getMonth() + 1).padStart(2, '0');
-              const yyyy = d.getFullYear();
-              setDataNascimento(`${dd}/${mm}/${yyyy}`);
-            }
-          } catch {}
-        }
-      };
+            if (!user) return;
+            setNome(user.nome || '');
+            setTelefone(formatTelefone(user.telefone));
+            setEmail(user.email || '');
+            setCpf(formatCpf(user.cpf));
+            
+            const foto = resolveFoto(user);
+            setPreviewFoto(foto);
 
-      fillFromUser(rawUser);
-      try {
-        const fresh = await fetchMyProfile();
-        if (fresh) fillFromUser(fresh);
-      } catch {}
+            if (user.dataNascimento) {
+                const dataString = String(user.dataNascimento);
+                const partes = dataString.split('-'); 
+                
+                if (partes.length === 3) {
+                    setDataNascimento(`${partes[2]}/${partes[1]}/${partes[0]}`);
+                } else {
+                    setDataNascimento(dataString);
+                }
+            }
+            // --------------------------------------------------------
+        };
+
+        fillFromUser(rawUser);
+        
+        try {
+            const fresh = await fetchMyProfile();
+            if (fresh) fillFromUser(fresh);
+        } catch {}
     };
     const unsub = navigation.addListener('focus', load);
     return unsub;

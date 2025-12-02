@@ -9,12 +9,7 @@ import { somenteDigitos } from '../../Componentes/Utils/validacao';
 import HeaderPadrao from '../../Componentes/Header/HeaderPadrao';
 
 export default function ContaPrestador({ navigation, route }) {
-    // Debug: logar tipos dos campos críticos
-    console.log('[ContaPrestador] Tipo nome:', typeof nome, nome);
-    console.log('[ContaPrestador] Tipo telefone:', typeof telefone, telefone);
-    console.log('[ContaPrestador] Tipo cnpj:', typeof cnpj, cnpj);
-    console.log('[ContaPrestador] Tipo email:', typeof email, email);
-    console.log('[ContaPrestador] Tipo previewFoto:', typeof previewFoto, previewFoto);
+  
   const [nome, setNome] = useState(route?.params?.nome || '');
   const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
@@ -32,21 +27,22 @@ export default function ContaPrestador({ navigation, route }) {
       if (!rawUser) {
         try { rawUser = await fetchMyProfile(); } catch {}
       }
-      // LOG para inspecionar dados do usuário
-      console.log('[ContaPrestador] Dados do usuário carregados:', rawUser);
-      // Se não for prestador, não faz nada (não redireciona)
+      
+      console.log('[ContaPrestador] Dados carregados:', rawUser);
+
       const fillFromUser = (user) => {
         if (!user) return;
         setNome(user.nome || '');
-        // Se vier do backend, já formatado, não formata novamente
         setTelefone(user.telefone ? formatTelefone(user.telefone) : '');
         setEmail(user.email || '');
         setCnpj(formatCnpj(user.cnpj));
+        
         const foto = resolveFoto(user);
         setPreviewFoto(foto);
       };
 
       fillFromUser(rawUser);
+      
       try {
         const fresh = await fetchMyProfile();
         if (fresh) fillFromUser(fresh);
@@ -59,13 +55,7 @@ export default function ContaPrestador({ navigation, route }) {
   const resolveFoto = (user) => {
     if (!user) return null;
     return (
-      user.foto ||
-      user.imagemPerfil ||
-      user.imageUrl ||
-      user.urlFoto ||
-      user.fotoUrl ||
-      user.url_foto ||
-      null
+      user.foto || user.imagemPerfil || user.imageUrl || user.urlFoto || user.fotoUrl || null
     );
   };
 
@@ -123,23 +113,25 @@ export default function ContaPrestador({ navigation, route }) {
     }
 
     if(senha === '') {
-          Alert.alert('Atenção', 'Digite sua senha se quiser editar.');
+          Alert.alert('Atenção', 'Digite sua senha atual para confirmar as alterações.');
           return;
     }
-
 
     try {
         setLoading(true);
         const payload = { nome, email };
-        // Envia o telefone como está no campo, sem formatação extra
+        
         const telefoneLimpo = somenteDigitos(telefone);
         if (telefoneLimpo) payload.telefone = telefoneLimpo;
-        const cnpjLimpo = somenteDigitos(cnpj);
-        if (cnpjLimpo) payload.cnpj = cnpjLimpo;
+        
         if (senha) payload.senha = senha;
+        
         console.log('[SALVAR] Payload enviado:', payload);
+        
         await editProfile(payload, photo || undefined);
+        
         try { await fetchMyProfile(); } catch {}
+        
         setPhoto(null);
         Alert.alert('Sucesso', 'Dados atualizados.');
         navigation.goBack();
@@ -166,16 +158,16 @@ export default function ContaPrestador({ navigation, route }) {
           <View style={styles.photoActions}>
             <TouchableOpacity style={styles.photoBtn} onPress={() => setCameraOpen(true)}>
               <Ionicons name="camera" size={18} color="#2c3e50" />
-              <Text style={styles.photoBtnText}>{String('Usar câmera')}</Text>
+              <Text style={styles.photoBtnText}>Usar câmera</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.photoBtn} onPress={pickFromGallery}>
               <Ionicons name="image" size={18} color="#2c3e50" />
-              <Text style={styles.photoBtnText}>{String('Galeria')}</Text>
+              <Text style={styles.photoBtnText}>Galeria</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <Text style={styles.label}>Nome</Text>
+        <Text style={styles.label}>Razão Social / Nome</Text>
         <TextInput style={styles.input} value={String(nome ?? '')} onChangeText={setNome} />
 
         <Text style={styles.label}>Telefone</Text>
@@ -189,27 +181,28 @@ export default function ContaPrestador({ navigation, route }) {
 
         <Text style={styles.label}>CNPJ</Text>
         <MaskedTextInput
-          style={styles.input}
+          style={[styles.input, styles.readOnly]}
           value={String(cnpj ?? '')}
           mask="99.999.999/9999-99"
-          editable={true}
-          onChangeText={setCnpj}
+          editable={false} 
+          selectTextOnFocus={false}
+          onChangeText={() => {}}
         />
 
         <Text style={styles.label}>E-mail</Text>
-        <TextInput style={styles.input} value={String(email ?? '')} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+        <TextInput style={[styles.input, styles.readOnly]} editable={false} value={String(email ?? '')} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
 
-        <Text style={styles.label}>Senha</Text>
-        <TextInput style={styles.input} value={senha} onChangeText={setSenha} secureTextEntry />
+        <Text style={styles.label}>Senha Atual</Text>
+        <TextInput style={styles.input} value={senha} onChangeText={setSenha} secureTextEntry placeholder="Obrigatório para salvar" placeholderTextColor="#aaa" />
 
-        <Text style={styles.label}>Confirmar senha</Text>
+        <Text style={styles.label}>Confirmar Senha</Text>
         <TextInput style={styles.input} value={confirmar} onChangeText={setConfirmar} secureTextEntry />
 
         <TouchableOpacity style={[styles.btn, loading && { opacity: 0.7 }]} disabled={loading} onPress={salvar}>
           {loading ? (
             <ActivityIndicator color="#fff" size="small" style={{ marginRight: 8 }} />
           ) : null}
-          <Text style={styles.btnText}>{loading ? 'Carregando...' : 'Confirmar alterações'}</Text>
+          <Text style={styles.btnText}>{loading ? 'Salvando...' : 'Confirmar alterações'}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -233,7 +226,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 28, // Espaço extra do topo
+    paddingTop: 28,
   },
   headerBtn: { padding: 6 },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50' },
@@ -248,13 +241,13 @@ const styles = StyleSheet.create({
   },
   btn: {
     marginTop: 8, backgroundColor: '#6D6FB3', height: 48, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center'
+    alignItems: 'center', justifyContent: 'center', flexDirection:'row'
   },
   btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   avatarBox: {
     alignItems: 'center',
     marginBottom: 20,
-    marginTop: 28, // Espaço extra do topo do conteúdo
+    marginTop: 28,
   },
   avatar: {
     width: 110,
