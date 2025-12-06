@@ -2,6 +2,7 @@
   "expo": {
     "name": "W4U",
     "slug": "W4U",
+    "scheme": "w4uapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/w4u_load_principal.png",

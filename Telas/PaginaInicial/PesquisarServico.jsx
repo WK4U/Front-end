@@ -181,8 +181,9 @@ const styles = StyleSheet.create({
         height: 48,
     },
     pickerStyle: {
-        height: 48,
         width: '100%',
+        height: 55,
+        color: '#000',
     },
     pickerIcon: { 
         position: 'absolute',

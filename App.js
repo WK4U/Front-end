@@ -23,11 +23,24 @@ import PerfilCliente from "./Telas/Cliente/PerfilCliente.jsx";
 import ContaCliente from "./Telas/Cliente/ContaCliente.jsx";
 import MeusServicos from "./Telas/Prestador/MeusServicos.jsx";
 import Planos from "./Telas/Prestador/Planos.jsx";
+import * as Linking from 'expo-linking';
 
 export default function App() {
   const Stack = createStackNavigator();
   const [booting, setBooting] = useState(true);
   const [initialRoute, setInitialRoute] = useState("Home");
+
+
+  const linking = {
+    prefixes: [Linking.createURL('/'), 'w4uapp://'],
+    config: {
+      screens: {
+        // Map the deep link path 'servico/:id' to the VisualizarServico screen
+        VisualizarServico: 'servico/:id', 
+        // You can add other deep link routes here if needed
+      },
+    },
+  };
 
   useEffect(() => {
     // Sempre inicia na tela Home, independente do usuário salvo
@@ -52,7 +65,7 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator initialRouteName={initialRoute}>
         <Stack.Screen name="Home" component={Home} />
         <Stack.Screen name="HomeCliente" component={HomeCliente} />

@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Ima
 import { Ionicons } from '@expo/vector-icons';
 import HeaderPadrao from '../../Componentes/Header/HeaderPadrao';
 import { listarMeusServicos, getCurrentUser, fetchMyProfile } from '../../Componentes/Api/apis.js';
+import * as Linking from 'expo-linking';
 
 export default function MeusServicos({ navigation }) {
     // Avatar do prestador (simples, pode ser aprimorado para buscar foto real)
@@ -121,11 +122,12 @@ export default function MeusServicos({ navigation }) {
         <TouchableOpacity
           style={[styles.cardActionButton, { backgroundColor: '#4CAF50', marginLeft: 8 }]}
           onPress={async () => {
-            const url = `https://w4u.com/servico/${item.id}`;
+            const deepLink = Linking.createURL(`servico/${item.id}`);
+
             try {
               await Share.share({
-                message: `Confira meu serviço no W4U: ${url}`,
-                url,
+                message: `Confira meu serviço no W4U: ${deepLink}`,
+                url: deepLink,
                 title: 'Meu serviço no W4U',
               });
             } catch (error) {

@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     color: '#5c6880',
   },
   btn: {
-    marginTop: 8, backgroundColor: '#7D95C9', height: 48, borderRadius: 12,
+    marginTop: 8, backgroundColor: "#6D6FB3", height: 48, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center'
   },
   btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
