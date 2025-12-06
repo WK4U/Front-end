@@ -217,6 +217,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontSize: 18,
     backgroundColor: "#fff",
+    color: '#000',
   },
   cameraButton: {
     width: 120,

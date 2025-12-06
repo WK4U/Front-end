@@ -120,6 +120,7 @@ export default function CadastroPJ(props) {
         placeholder="Telefone"
         placeholderTextColor="#888888"
         mask="(99) 99999-9999"
+        keyboardType="phone-pad"
         value={telefone}
         onChangeText={(masked, raw) => setTelefone(masked)}
       />
@@ -199,6 +200,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontSize: 18,
     backgroundColor: "#fff",
+    color: '#000',
   },
   cameraButton: {
     width: 100,

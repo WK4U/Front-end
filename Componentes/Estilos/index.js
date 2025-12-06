@@ -127,6 +127,7 @@ const Estilos = StyleSheet.create({
     backgroundColor: "#fff",
     fontSize: 16,
     marginBottom: 16,
+    color: '#000',
   },
   buttonContainer: {
     flexDirection: "row",
