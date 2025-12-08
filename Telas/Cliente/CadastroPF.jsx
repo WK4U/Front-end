@@ -93,7 +93,7 @@ export default function CadastroPF(props) {
       props.navigation.reset({ index: 0, routes: [{ name: 'LoginPF' }] });
     } catch (err) {
       const errorMessage = typeof err === 'string' ? err : (err?.message || 'Erro no cadastro');
-      Alert.alert("Erro no cadastro", String(errorMessage));
+      Alert.alert("Cadastro: Cliente", String(errorMessage));
     }
   };
 

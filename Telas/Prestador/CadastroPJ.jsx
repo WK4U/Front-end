@@ -85,7 +85,7 @@ export default function CadastroPJ(props) {
       props.navigation.reset({ index: 0, routes: [{ name: 'LoginPJ' }] });
     } catch (err) {
       const errorMessage = typeof err === 'string' ? err : (err?.message || 'Erro no cadastro');
-      Alert.alert("Erro no cadastro", String(errorMessage));
+      Alert.alert("Cadastro: Prestador", String(errorMessage));
     }
   };
 
